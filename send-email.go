@@ -16,7 +16,8 @@ import (
 )
 
 var (
-	file_path, _     = os.Getwd()
+	exePath, _       = os.Executable()
+	file_path        = filepath.Dir(exePath)
 	year, month, day = time.Now().Date()
 	subject          = fmt.Sprintf("【随手记】 %v-%v-%v", year, int(month), day)
 )
