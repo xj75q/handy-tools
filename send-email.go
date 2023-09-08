@@ -68,7 +68,7 @@ func StructToMap(obj interface{}) map[string]interface{} {
 }
 
 func (f *Cfg) CreateConfig(fpath string) (error, string) {
-	fi := fpath + "/" + f.FileName
+	fi := fpath + string(os.PathSeparator) + f.FileName
 	file := filepath.Clean(fi)
 	_, err := os.Stat(file)
 	if err != nil {
