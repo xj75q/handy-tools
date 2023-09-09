@@ -175,9 +175,10 @@ func (m *Email) SendEmail() error {
 }
 
 var configCommand = &cli.Command{
-	Name:    "config",
-	Usage:   "Displays global config options and their current values",
+	Name: "config",
+	//Usage:   "Displays global config options and their current values",
 	Aliases: []string{"c"},
+
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:     "from_mail",
@@ -218,7 +219,6 @@ var configCommand = &cli.Command{
 
 var mailCommand = &cli.Command{
 	Name:    "send",
-	Usage:   "send data to mail",
 	Aliases: []string{"s"},
 
 	Flags: []cli.Flag{
@@ -241,7 +241,10 @@ var mailCommand = &cli.Command{
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "发送随笔到邮箱里面"
+	//app.Name = "发送随笔到邮箱里面"
+	app.HideVersion = true
+	app.HideHelpCommand = true
+
 	app.Usage = "(send to email...)"
 	app.UsageText = `./send c -f <parames> or ./send m -d <parames>`
 	app.Commands = []*cli.Command{
