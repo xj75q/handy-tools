@@ -114,7 +114,7 @@ func (f *Cfg) CreateConfig(fpath string) (error, string) {
 }
 
 func (f *Cfg) ReadCfg() (error, *CfgInfo) {
-	fi := file_path + "/" + f.FileName
+	fi := file_path + string(os.PathSeparator) + f.FileName
 	file := filepath.Clean(fi)
 	_, err := os.Stat(file)
 	if err != nil {
