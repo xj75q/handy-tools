@@ -93,5 +93,5 @@ func main() {
 		fmt.Printf(">> 出错了 %v", err)
 		return
 	}
-	fmt.Printf("您所在的地区为：%v,\n天气情况为    ：%v,\n风力          ：%v,\n湿度          ：%v,\n空气质量      ：%v,\nAQI指数为     :%v\n", data.city, data.weather, data.wind, data.humidity, data.airLevel, data.Aqi)
+	fmt.Printf("您所在的地区为：%v\n天气情况为    ：%v\n风力          ：%v\n湿度          ：%v\n空气质量      ：%v\nAQI指数为     :%v\n", data.city, data.weather, data.wind, data.humidity, data.airLevel, data.Aqi)
 }
