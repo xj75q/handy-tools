@@ -16,13 +16,15 @@ const (
 )
 
 type weatherData struct {
-	city     string
-	weather  string
-	temp     string
-	wind     string
-	humidity string
-	airLevel string
-	Aqi      string
+	city       string
+	weather    string
+	temp       string
+	wind       string
+	humidity   string
+	airLevel   string
+	Aqi        string
+	tips       string
+	prediction string
 }
 
 func weatherHandler() *weatherData {
@@ -66,10 +68,15 @@ func (d *weatherData) parseData() (error, *weatherData) {
 		windLevel, _ := item.Find(`./div[4]/a[1]/p[1]/text()`)
 		windDirect, _ := item.Find(`./div[4]/a[1]/p[2]/text()`)
 		humidity, _ := item.Find("./div[4]/a[2]/p[1]/text()")
+		tip, _ := item.Find(`./div[@class="current-abstract"]/a/text()`)
+		pred, _ := item.Find(`./a[@class="live-warning d-flex justify-content-between align-items-center"]/span/text()`)
+
 		d.city = loc.String()
 		d.temp = tem.String()
 		d.weather = weather.String()
 		d.humidity = humidity.String()
+		d.prediction = re.ReplaceAllString(pred.String(), " ")
+		d.tips = re.ReplaceAllString(re.ReplaceAllString(tip.String(), " "), "")
 		result := re.ReplaceAllString(windLevel.String(), " ")
 		d.wind = fmt.Sprintf("%v(%v)", windDirect.String(), result)
 	}
@@ -79,7 +86,7 @@ func (d *weatherData) parseData() (error, *weatherData) {
 		airlevel, _ := aqi.Find(`./a[@class="c-index-air"]/h3/text()`)
 		aqinum, _ := aqi.Find(`./a[@class="c-index-air"]/p/text()`)
 		d.airLevel = airlevel.String()
-		aqiData := re.ReplaceAllString(aqinum.String(), " ")
+		aqiData := re.ReplaceAllString(re.ReplaceAllString(aqinum.String(), " "), "")
 		result := strings.Split(aqiData, "I")[1]
 		d.Aqi = result
 	}
@@ -93,5 +100,6 @@ func main() {
 		fmt.Printf(">> 出错了 %v", err)
 		return
 	}
-	fmt.Printf("您所在的地区为：%v\n天气情况为    ：%v\n风力          ：%v\n湿度          ：%v\n空气质量      ：%v\nAQI指数为     :%v\n", data.city, data.weather, data.wind, data.humidity, data.airLevel, data.Aqi)
+
+	fmt.Printf("您所在的地区为：%v\n天气情况为    ：%v\n风力          ：%v\n湿度          ：%v\n空气质量      ：%v\nAQI指数为     ：%v\n预计会有      ：%v\n温馨提醒      ：%v\n", data.city, data.weather, data.wind, data.humidity, data.airLevel, data.Aqi, data.prediction, data.tips)
 }
