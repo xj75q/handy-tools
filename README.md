@@ -23,3 +23,18 @@ eg:
 ```
   ./renamefile --input="/home/dir/go-dir" --frompath=true --name="day"
 ```
+
+
+
+2> hideIcon 隐藏任务栏图标(只在win上可以使用)
+
+使用方法：
+
+```
+alt+1 选择窗口；
+alt+2 隐藏该程序的任务栏图标； 
+alt+3 恢复任务栏图标
+```
+
+注：主要针对微信的闪闪闪，只是隐藏任务栏图标，在主窗口还能聊天
+
