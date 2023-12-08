@@ -66,7 +66,6 @@ func htmlHandler() *htmlParams {
 
 func (c *cfg) initConfig() (error, string) {
 	file := filepath.Clean(fpath + string(os.PathSeparator) + fname)
-	fmt.Println(file)
 	_, err := os.Stat(file)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -76,8 +75,7 @@ func (c *cfg) initConfig() (error, string) {
 			if err != nil {
 				return fmt.Errorf("创建并写入文件失败，请检查..."), ""
 			} else {
-				fmt.Println(">> 配置文件初始化成功")
-				return nil, "success"
+				return nil, fmt.Sprintln(">> 登录并将配置文件初始化成功...")
 			}
 		} else {
 			fmt.Printf("无法判断文件 %s 是否存在：%v\n", file, err)
@@ -85,7 +83,7 @@ func (c *cfg) initConfig() (error, string) {
 	} else {
 		result, _ := json.MarshalIndent(c.Content, "", "")
 		_ = ioutil.WriteFile(file, result, 0644)
-		return nil, "update config file success..."
+		return nil, fmt.Sprintln(">> 设置清单项目名成功...")
 	}
 	return nil, ""
 }
@@ -193,8 +191,11 @@ func (u *userInfo) login() error {
 	cookie := "t=" + respData["token"].(string)
 	cfg := cfgHandler()
 	cfg.Content.Cookie = cookie
-	cfg.initConfig()
-
+	err, result := cfg.initConfig()
+	if err != nil {
+		return err
+	}
+	fmt.Println(result)
 	return nil
 
 }
@@ -216,7 +217,7 @@ func (c *cfg) checkProject() (error, *cfgInfo) {
 		return err, nil
 	}
 	if data.ProjectId == "" {
-		return fmt.Errorf("请先设置清单名"), nil
+		return fmt.Errorf("请先设置项目名"), nil
 	}
 	return nil, data
 }
@@ -316,7 +317,7 @@ func (c *cfg) sendTask(title, content string) error {
 	}
 	defer resp.Body.Close()
 
-	fmt.Println(">> 记录清单完成 ...")
+	fmt.Println(">> 记录任务完成 ...")
 	return nil
 }
 
@@ -343,7 +344,7 @@ var (
 
 	projectCmd = &cobra.Command{
 		Use:   "project",
-		Short: "设置清单目录",
+		Short: "设置清单项目名",
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg := cfgHandler()
 			input, _ := cmd.Flags().GetString("name")
@@ -355,7 +356,7 @@ var (
 	}
 
 	taskCmd = &cobra.Command{
-		Use:     "task",
+		Use:     "record",
 		Short:   "创建任务",
 		Aliases: []string{},
 		Run: func(cmd *cobra.Command, args []string) {
