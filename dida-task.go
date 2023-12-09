@@ -22,6 +22,7 @@ var (
 	LoginUrl      = BaseUrl + "/api/v2/user/signon?wc=true&remember=true"
 	exe_path, _   = os.Executable()
 	fpath         = filepath.Dir(exe_path)
+	now           = time.Now().Format("2006-01-02 15:04:05")
 	fname         = "dida-cfg.json"
 )
 
@@ -270,9 +271,9 @@ func (c *cfg) setProject() error {
 	return nil
 }
 
-func recordText(title, content, projectId string) map[string]interface{} {
+func recordText(title, content, projectId, startdate string) map[string]interface{} {
 	record := make(map[string]interface{})
-	record["modifiedTime"] = time.Now().Format("2006-01-02 15:04:05")
+	record["modifiedTime"] = now
 	record["title"] = title
 	record["priority"] = 0
 	record["status"] = 0
@@ -280,7 +281,7 @@ func recordText(title, content, projectId string) map[string]interface{} {
 	record["content"] = content
 	record["sortOrder"] = 0
 	record["projectId"] = projectId
-	record["startDate"] = ""
+	record["startDate"] = startdate
 	record["dueDate"] = ""
 	record["items"] = []string{}
 	record["assignee"] = ""
@@ -293,13 +294,13 @@ func recordText(title, content, projectId string) map[string]interface{} {
 	return record
 }
 
-func (c *cfg) sendTask(title, content string) error {
+func (c *cfg) sendTask(title, content, startdate string) error {
 	err, LocalCfg := c.checkProject()
 	if err != nil {
 		fmt.Println("")
 	}
 
-	data := recordText(title, content, LocalCfg.ProjectId)
+	data := recordText(title, content, LocalCfg.ProjectId, startdate)
 	web := htmlHandler()
 	client := &http.Client{}
 	sendData, _ := json.Marshal(&data)
@@ -363,7 +364,8 @@ var (
 			cfg := cfgHandler()
 			title, _ := cmd.Flags().GetString("title")
 			content, _ := cmd.Flags().GetString("content")
-			if err := cfg.sendTask(title, content); err != nil {
+			startdate, _ := cmd.Flags().GetString("date")
+			if err := cfg.sendTask(title, content, startdate); err != nil {
 				fmt.Println(err)
 			}
 
@@ -372,11 +374,13 @@ var (
 )
 
 func init() {
+	time.Now()
 	registerCmd.Flags().StringP("username", "u", "", "用户名")
 	registerCmd.Flags().StringP("password", "p", "", "密码")
 	projectCmd.Flags().StringP("name", "n", "", "清单名")
 	taskCmd.Flags().StringP("title", "i", "", "任务标题")
 	taskCmd.Flags().StringP("content", "t", "", "任务内容")
+	taskCmd.Flags().StringP("date", "d", strings.Split(now, " ")[0], "")
 	registerCmd.MarkFlagsRequiredTogether("username", "password")
 
 	didaCmd.AddCommand(registerCmd)
@@ -389,4 +393,5 @@ func main() {
 		fmt.Printf("err of %s", err)
 		os.Exit(1)
 	}
+
 }
