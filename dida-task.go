@@ -281,7 +281,11 @@ func recordText(title, content, projectId, startdate string) map[string]interfac
 	record["content"] = content
 	record["sortOrder"] = 0
 	record["projectId"] = projectId
-	record["startDate"] = startdate
+	if strings.Contains(title, "天") || strings.Contains(title, "号") {
+		record["startDate"] = ""
+	} else {
+		record["startDate"] = startdate
+	}
 	record["dueDate"] = ""
 	record["items"] = []string{}
 	record["assignee"] = ""
@@ -291,6 +295,7 @@ func recordText(title, content, projectId, startdate string) map[string]interfac
 	record["reminder"] = ""
 	record["local"] = true
 	record["isDirty"] = false
+	record["timeZone"] = "Asia/Hong_Kong"
 	return record
 }
 
@@ -393,5 +398,4 @@ func main() {
 		fmt.Printf("err of %s", err)
 		os.Exit(1)
 	}
-
 }
