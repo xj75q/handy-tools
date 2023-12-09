@@ -166,7 +166,7 @@ func (u *userInfo) login() error {
 	sendData, _ := json.Marshal(&u)
 	req, err := http.NewRequest(web.Method, LoginUrl, strings.NewReader(string(sendData)))
 	if err != nil {
-		return fmt.Errorf("")
+		return err
 	}
 	headers := web.generateReqHeader("")
 	for key, header := range headers {
