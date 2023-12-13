@@ -16,23 +16,25 @@ var (
 
 type fileInfo struct {
 	fPath string
-	fType string
 }
 
 func handlerPic() *fileInfo {
 	return &fileInfo{}
 }
 
-func (f *fileInfo) judgeFileType() string {
-	switch f.fType {
+func (f *fileInfo) judgeFileType(flag string) bool {
+	switch flag {
 	case "webp":
-		return ".webp"
+		return true
+
 	case "png":
-		return ".png"
+		return true
+
 	case "jpeg":
-		return ".jpeg"
+		return true
+
 	default:
-		return ".webp"
+		return false
 	}
 }
 
@@ -49,14 +51,15 @@ func isFile(path string) bool {
 }
 
 func (f *fileInfo) executeSwitch() error {
-	suffixFlag := f.judgeFileType()
 	err := filepath.Walk(f.fPath, func(pathAndFilename string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
-		if isFile(pathAndFilename) && strings.HasSuffix(strings.ToLower(info.Name()), suffixFlag) {
-			picName := strings.Split(info.Name(), suffixFlag)[0]
+		infoName := strings.Split(strings.ToLower(info.Name()), ".")
+		flag := infoName[len(infoName)-1]
+		isPicType := f.judgeFileType(flag)
+		if isFile(pathAndFilename) && isPicType {
+			picName := strings.Join(infoName[:len(infoName)-1], "")
 			outlist := strings.Split(pathAndFilename, string(os.PathSeparator))
 			final := outlist[:len(outlist)-1]
 			outpath := strings.Join(final, "/") + string(os.PathSeparator)
