@@ -327,6 +327,7 @@ func (p *param) switchFile(fInfo interface{}) {
 
 var (
 	rootCmd = &cobra.Command{
+		Short: "【音视频转换工具】默认将视频转换成 mp3 音频格式",
 		Run: func(cmd *cobra.Command, args []string) {
 			input := inputHandler()
 			inpath, _ := cmd.Flags().GetString("input")
