@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -161,43 +162,66 @@ func (h *htmlParams) generateReqHeader(cookie string) map[string]interface{} {
 	return headers
 }
 
-func (u *userInfo) login() error {
+func (u *userInfo) login() {
 	web := htmlHandler()
 	client := &http.Client{}
 	sendData, _ := json.Marshal(&u)
-	req, err := http.NewRequest(web.Method, LoginUrl, strings.NewReader(string(sendData)))
-	if err != nil {
-		return err
-	}
-	headers := web.generateReqHeader("")
-	for key, header := range headers {
-		req.Header.Set(key, header.(string))
-	}
-	resp, err := client.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("resp status:%v", resp.Status)
-	}
-	defer resp.Body.Close()
-	var respData = make(map[string]interface{})
+	var wg sync.WaitGroup
+	stream := make(chan interface{}, 1)
+	defer close(stream)
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		req, err := http.NewRequest(web.Method, LoginUrl, strings.NewReader(string(sendData)))
+		if err != nil {
+			stream <- err
+		}
+		headers := web.generateReqHeader("")
+		for key, header := range headers {
+			req.Header.Set(key, header.(string))
+		}
+		resp, err := client.Do(req)
+		if resp.StatusCode != http.StatusOK {
+			stream <- fmt.Errorf("resp status:%v", resp.Status)
+		}
+		defer resp.Body.Close()
+		var respData = make(map[string]interface{})
 
-	jErr := json.Unmarshal(body, &respData)
-	if jErr != nil {
-		return jErr
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			stream <- err
+		}
+
+		jErr := json.Unmarshal(body, &respData)
+		if jErr != nil {
+			stream <- jErr
+		}
+		cookie := "t=" + respData["token"].(string)
+		cfg := cfgHandler()
+		cfg.Content.Cookie = cookie
+		err, result := cfg.initConfig()
+		if err != nil {
+			stream <- err
+		}
+		stream <- result
+	}()
+	wg.Wait()
+loop:
+	for {
+		select {
+		case result := <-stream:
+			switch result.(type) {
+			case error:
+				fmt.Printf(">> 出错了：%v\n", result)
+				break loop
+			case string:
+				fmt.Println(strings.Trim(result.(string), "\n"))
+				break loop
+			}
+
+		}
 	}
-	cookie := "t=" + respData["token"].(string)
-	cfg := cfgHandler()
-	cfg.Content.Cookie = cookie
-	err, result := cfg.initConfig()
-	if err != nil {
-		return err
-	}
-	fmt.Println(result)
-	return nil
 
 }
 
@@ -223,55 +247,78 @@ func (c *cfg) checkProject() (error, *cfgInfo) {
 	return nil, data
 }
 
-func (c *cfg) setProject() error {
+func (c *cfg) setProject() {
 	web := htmlHandler()
-	err, info := c.checkLogin()
-	if err != nil {
-		return err
-	}
-	c.Content.Cookie = info.Cookie
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", ProjectApiUrl, strings.NewReader(""))
-	if err != nil {
-		return err
-	}
-	headers := web.generateReqHeader(info.Cookie)
-	for key, header := range headers {
-		req.Header.Set(key, header.(string))
-	}
-	resp, err := client.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("resp status:%v", resp.Status)
-	}
-	defer resp.Body.Close()
 
-	var respData = []map[string]interface{}{}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-	jErr := json.Unmarshal(body, &respData)
-	if jErr != nil {
-		return jErr
-	}
+	var wg sync.WaitGroup
+	stream := make(chan interface{}, 1)
+	defer close(stream)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err, info := c.checkLogin()
+		if err != nil {
+			stream <- err
+		}
+		c.Content.Cookie = info.Cookie
+		client := &http.Client{}
+		req, err := http.NewRequest("GET", ProjectApiUrl, strings.NewReader(""))
+		if err != nil {
+			stream <- err
+		}
+		headers := web.generateReqHeader(info.Cookie)
+		for key, header := range headers {
+			req.Header.Set(key, header.(string))
+		}
+		resp, err := client.Do(req)
+		if resp.StatusCode != http.StatusOK {
+			stream <- fmt.Errorf("resp status:%v", resp.Status)
+		}
+		defer resp.Body.Close()
 
-	for _, project := range respData {
-		inputName := c.Content.ProjectName
-		if project["name"].(string) == inputName {
-			c.Content.ProjectId = project["id"].(string)
-			//todo
-			err, result := c.initConfig()
-			if err != nil {
-				return err
+		var respData = []map[string]interface{}{}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			stream <- err
+		}
+		jErr := json.Unmarshal(body, &respData)
+		if jErr != nil {
+			stream <- jErr
+		}
+
+		for _, project := range respData {
+			inputName := c.Content.ProjectName
+			if project["name"].(string) == inputName {
+				c.Content.ProjectId = project["id"].(string)
+				//todo
+				err, result := c.initConfig()
+				if err != nil {
+					stream <- err
+				}
+				stream <- result
+				break
 			}
-			fmt.Println(result)
-			break
+		}
+	}()
+	wg.Wait()
+loop:
+	for {
+		select {
+		case result := <-stream:
+			switch result.(type) {
+			case error:
+				fmt.Printf(">> 出错了：%v\n", result)
+				break loop
+			case string:
+				fmt.Println(strings.Trim(result.(string), "\n"))
+				break loop
+			}
 		}
 	}
-	return nil
+
 }
 
-func recordText(title, content, projectId, startdate string) map[string]interface{} {
+func (c *cfg) recordText(title, content, projectId, startdate string) map[string]interface{} {
 	record := make(map[string]interface{})
 	record["modifiedTime"] = now
 	record["title"] = title
@@ -299,32 +346,49 @@ func recordText(title, content, projectId, startdate string) map[string]interfac
 	return record
 }
 
-func (c *cfg) sendTask(title, content, startdate string) error {
-	err, LocalCfg := c.checkProject()
-	if err != nil {
-		fmt.Println("")
-	}
+func (c *cfg) sendTask(title, content, startdate string) {
+	var wg sync.WaitGroup
+	stream := make(chan interface{}, 1)
+	defer close(stream)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err, LocalCfg := c.checkProject()
+		if err != nil {
+			stream <- err
+		}
+		data := c.recordText(title, content, LocalCfg.ProjectId, startdate)
+		web := htmlHandler()
+		client := &http.Client{}
+		sendData, _ := json.Marshal(&data)
+		req, err := http.NewRequest(web.Method, TaskApiUrl, strings.NewReader(string(sendData)))
+		if err != nil {
+			stream <- err
+		}
+		headers := web.generateReqHeader(LocalCfg.Cookie)
+		for key, header := range headers {
+			req.Header.Set(key, header.(string))
+		}
+		resp, err := client.Do(req)
+		if resp.StatusCode != http.StatusOK {
+			stream <- fmt.Errorf("resp status:%v", resp.Status)
+		}
+		defer resp.Body.Close()
+	}()
 
-	data := recordText(title, content, LocalCfg.ProjectId, startdate)
-	web := htmlHandler()
-	client := &http.Client{}
-	sendData, _ := json.Marshal(&data)
-	req, err := http.NewRequest(web.Method, TaskApiUrl, strings.NewReader(string(sendData)))
-	if err != nil {
-		return fmt.Errorf("")
-	}
-	headers := web.generateReqHeader(LocalCfg.Cookie)
-	for key, header := range headers {
-		req.Header.Set(key, header.(string))
-	}
-	resp, err := client.Do(req)
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("resp status:%v", resp.Status)
-	}
-	defer resp.Body.Close()
+	wg.Wait()
 
-	fmt.Println(">> 记录任务完成 ...")
-	return nil
+	for {
+		select {
+		case err := <-stream:
+			fmt.Printf(">> 出错了%v\n", err)
+			return
+
+		default:
+			fmt.Println(">> 记录任务完成 ...")
+			return
+		}
+	}
 }
 
 var (
@@ -342,9 +406,7 @@ var (
 			user := userHandler()
 			user.UserName, _ = cmd.Flags().GetString("username")
 			user.Password, _ = cmd.Flags().GetString("password")
-			if err := user.login(); err != nil {
-				fmt.Println(err)
-			}
+			user.login()
 		},
 	}
 
@@ -355,9 +417,7 @@ var (
 			cfg := cfgHandler()
 			input, _ := cmd.Flags().GetString("name")
 			cfg.Content.ProjectName = input
-			if err := cfg.setProject(); err != nil {
-				fmt.Println(err)
-			}
+			cfg.setProject()
 		},
 	}
 
@@ -370,10 +430,7 @@ var (
 			title, _ := cmd.Flags().GetString("title")
 			content, _ := cmd.Flags().GetString("content")
 			startdate, _ := cmd.Flags().GetString("date")
-			if err := cfg.sendTask(title, content, startdate); err != nil {
-				fmt.Println(err)
-			}
-
+			cfg.sendTask(title, content, startdate)
 		},
 	}
 )
