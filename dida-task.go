@@ -2,6 +2,7 @@ package main
 
 import "C"
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
@@ -23,7 +24,8 @@ var (
 	LoginUrl      = BaseUrl + "/api/v2/user/signon?wc=true&remember=true"
 	exe_path, _   = os.Executable()
 	fpath         = filepath.Dir(exe_path)
-	now           = time.Now().Format("2006-01-02 15:04:05")
+	pd, _         = time.ParseDuration("-1h")
+	now           = fmt.Sprintf("%s%s", time.Now().Add(8*pd).Format("2006-01-02T15:04:05"), ".000+0000")
 	fname         = "dida-cfg.json"
 )
 
@@ -319,29 +321,42 @@ loop:
 }
 
 func (c *cfg) recordText(title, content, projectId, startdate string) map[string]interface{} {
-	record := make(map[string]interface{})
+	var (
+		record    = make(map[string]interface{})
+		reminders = []interface{}{}
+	)
+	t := TimeHandler()
+	//uid, _ := uuid.NewUUID()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go t.SwitchDate(ctx, string([]rune(title)))
+	startDate := t.GetTime()
+	reminders = append(reminders, map[string]interface{}{
+		"trigger": "TRIGGER:PT0S",
+		"id":      "",
+	})
+
+	record["createdTime"] = now
 	record["modifiedTime"] = now
 	record["title"] = title
 	record["priority"] = 0
 	record["status"] = 0
 	record["deleted"] = 0
 	record["content"] = content
-	record["sortOrder"] = 0
+	//record["sortOrder"] = 0
 	record["projectId"] = projectId
-	if strings.Contains(title, "天") || strings.Contains(title, "号") {
-		record["startDate"] = ""
-	} else {
-		record["startDate"] = startdate
-	}
-	record["dueDate"] = ""
-	record["items"] = []string{}
-	record["assignee"] = ""
+	record["startDate"] = startDate
 	record["progress"] = 0
+	record["repeatFlag"] = ""
+	record["isFloating"] = false
 	record["tags"] = []string{}
-	record["isAllDay"] = true
-	record["reminder"] = ""
-	record["local"] = true
-	record["isDirty"] = false
+	record["exDate"] = []string{}
+	record["items"] = []string{}
+	record["isAllDay"] = false
+	record["reminders"] = reminders
+	record["kind"] = nil
+	record["dueDate"] = nil
+	record["assignee"] = nil
 	record["timeZone"] = "Asia/Hong_Kong"
 	return record
 }
