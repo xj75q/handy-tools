@@ -10,12 +10,13 @@ import (
 )
 
 var (
-	stream      = make(chan interface{})
-	finalStream = make(chan string)
-	h, _        = time.ParseDuration("-1h")
-	didaNow     = time.Now().Add(8 * h)
-	midday      = 12
-	timeFlag    = ".000+0000"
+	stream       = make(chan interface{})
+	finalStream  = make(chan string)
+	h, _         = time.ParseDuration("-1h")
+	didaNow      = time.Now().Add(8 * h)
+	midday       = 12 - 8
+	defaultNight = "13:00:00"
+	timeFlag     = ".000+0000"
 )
 
 type TimeModify struct {
@@ -112,7 +113,8 @@ func (t *TimeModify) SwitchDate(ctx context.Context, title string) {
 			if strings.Contains(dayTime.(string), "T") {
 				finalStream <- dayTime.(string)
 			} else {
-				finalStream <- fmt.Sprintf("%sT%s", today, dayTime)
+
+				finalStream <- fmt.Sprintf("%sT%s", today, dayTime.(string))
 			}
 
 			return
@@ -133,7 +135,7 @@ func switchTime(ctx context.Context, title string) {
 		timeStr := getStr(strings.Split(strings.Split(title, "点")[0], ("午"))[1])
 		timeInt, _ := strconv.Atoi(timeStr)
 		dTime := midday + timeInt
-		stream <- fmt.Sprintf("%v:30%s", dTime, timeFlag)
+		stream <- fmt.Sprintf("%v:30:00%s", dTime, timeFlag)
 
 	case (strings.Contains(title, "下午") || strings.Contains(title, "晚上")) && strings.Contains(title, "点") && !strings.Contains(title, "点半"):
 		if strings.Contains(title, "晚上") {
@@ -144,7 +146,13 @@ func switchTime(ctx context.Context, title string) {
 		timeStr := getStr(strings.Split(strings.Split(title, "点")[0], "午")[1])
 		timeInt, _ := strconv.Atoi(timeStr)
 		dTime := midday + timeInt
-		stream <- fmt.Sprintf("%v:00%s", dTime, timeFlag)
+
+		stream <- fmt.Sprintf("%v:00:00%s", dTime, timeFlag)
+
+	case strings.Contains(title, "晚上") && !strings.Contains(title, "点"):
+		today := time.Now().Format("2006-01-02T15:04:05")
+		nightTime := strings.Split(today, "T")[1]
+		stream <- fmt.Sprintf("%v%s", strings.Replace(today, nightTime, defaultNight, -1), timeFlag)
 
 	case strings.Contains(title, "分钟后"):
 		splitStr := strings.Split(title, "分钟后")[0]
