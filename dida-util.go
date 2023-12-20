@@ -177,9 +177,8 @@ func switchTime(ctx context.Context, title string) {
 		)
 		if strings.Contains(title, "：") {
 			splitStr := strings.Split(title, "：")
-			inputHour := reNum(splitStr[0])
 			inputMin := reNum(splitStr[1])
-			inputHourInt, _ := strconv.Atoi(splitStr[0])
+			inputHourInt, _ := strconv.Atoi(reNum(splitStr[0]))
 			y, m, d := didaNow.Date()
 			if inputHourInt > 12 {
 				hourInt := inputHourInt - 8
@@ -190,7 +189,7 @@ func switchTime(ctx context.Context, title string) {
 				if currentHour > 4 {
 					hourStr = strconv.Itoa(inputHourInt + 4)
 				} else {
-					hourStr = inputHour
+					hourStr = strconv.Itoa(inputHourInt - 8)
 				}
 				result = fmt.Sprintf("%v-%v-%vT%s:%s:00%s", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
 			}
@@ -200,7 +199,7 @@ func switchTime(ctx context.Context, title string) {
 			splitStr := strings.Split(title, ":")
 			inputHour := reNum(splitStr[0])
 			inputMin := reNum(splitStr[1])
-			inputHourInt, _ := strconv.Atoi(splitStr[0])
+			inputHourInt, _ := strconv.Atoi(inputHour)
 			y, m, d := didaNow.Date()
 			if inputHourInt > 12 {
 				hourInt := inputHourInt - 8
@@ -210,7 +209,7 @@ func switchTime(ctx context.Context, title string) {
 				if currentHour > 4 {
 					hourStr = strconv.Itoa(inputHourInt + 4)
 				} else {
-					hourStr = inputHour
+					hourStr = strconv.Itoa(inputHourInt - 8)
 				}
 				result = fmt.Sprintf("%v-%v-%vT%s:%s:00%s", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
 			}
