@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -27,6 +28,7 @@ var (
 	pd, _         = time.ParseDuration("-1h")
 	now           = fmt.Sprintf("%s%s", time.Now().Add(8*pd).Format("2006-01-02T15:04:05"), ".000+0000")
 	fname         = "dida-cfg.json"
+	preSign       = "657"
 )
 
 type userInfo struct {
@@ -326,16 +328,18 @@ func (c *cfg) recordText(title, content, projectId, startdate string) map[string
 		reminders = []interface{}{}
 	)
 	t := TimeHandler()
-	//uid, _ := uuid.NewUUID()
+	uid, _ := uuid.NewUUID()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go t.SwitchDate(ctx, string([]rune(title)))
 	startDate := t.GetTime()
+	f := strings.ReplaceAll(uid.String(), "-", "")
+	remindid := fmt.Sprintf("%v%v", preSign, f[:21])
 	reminders = append(reminders, map[string]interface{}{
 		"trigger": "TRIGGER:PT0S",
-		"id":      "",
+		"id":      remindid,
 	})
-
+	//fmt.Println(">>", startDate)
 	record["createdTime"] = now
 	record["modifiedTime"] = now
 	record["title"] = title
@@ -373,6 +377,7 @@ func (c *cfg) sendTask(title, content, startdate string) {
 			stream <- err
 		}
 		data := c.recordText(title, content, LocalCfg.ProjectId, startdate)
+
 		web := htmlHandler()
 		client := &http.Client{}
 		sendData, _ := json.Marshal(&data)
@@ -470,4 +475,7 @@ func main() {
 		fmt.Printf("err of %s", err)
 		os.Exit(1)
 	}
+	//c := cfgHandler()
+	//c.recordText("8:15", "", "", "")
+
 }

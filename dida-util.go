@@ -12,10 +12,10 @@ import (
 var (
 	stream       = make(chan interface{})
 	finalStream  = make(chan string)
-	h, _         = time.ParseDuration("-1h")
-	didaNow      = time.Now().Add(8 * h)
-	midday       = 12 - 8
-	defaultNight = "13:00:00"
+	minusHour, _ = time.ParseDuration("-1h")
+	didaNow      = time.Now().Add(8 * minusHour) //8小时的时差
+	midday       = 12 - 8                        //需要在12点的基础上减去8小时
+	defaultNight = "13:00:00"                    //晚上21点，减去8小时后就是现在设置的13：00
 	timeFlag     = ".000+0000"
 )
 
@@ -155,45 +155,100 @@ func switchTime(ctx context.Context, title string) {
 		stream <- fmt.Sprintf("%v%s", strings.Replace(today, nightTime, defaultNight, -1), timeFlag)
 
 	case strings.Contains(title, "分钟后"):
+		var result string
 		splitStr := strings.Split(title, "分钟后")[0]
 		intStr := getSpecialStr(splitStr)
 		strInt, _ := strconv.Atoi(intStr)
-		min := didaNow.Add(time.Duration(strInt) * time.Minute).Add(8 * h).Format("2006-01-02T15:04:05")
-		stream <- fmt.Sprintf("%v%s", min, timeFlag)
+		result = didaNow.Add(time.Duration(strInt) * time.Minute).Format("2006-01-02T15:04:05")
+		stream <- fmt.Sprintf("%v%s", result, timeFlag)
 
 	case strings.Contains(title, "小时后"):
+		var result string
 		splitStr := strings.Split(title, "小时后")[0]
 		intStr := getSpecialStr(splitStr)
 		strInt, _ := strconv.Atoi(intStr)
-		min := didaNow.Add(time.Duration(strInt) * time.Hour).Add(8 * h).Format("2006-01-02T15:04:05")
-		stream <- fmt.Sprintf("%v%s", min, timeFlag)
+		result = didaNow.Add(time.Duration(strInt) * time.Hour).Format("2006-01-02T15:04:05")
+		stream <- fmt.Sprintf("%v%s", result, timeFlag)
 
-	case strings.Contains(title, "："):
-		splitStr := strings.Split(title, "：")
-		t := fmt.Sprintf("%s:%s", reNum(splitStr[0]), reNum(splitStr[1]))
-		if t != ":" {
-			stream <- fmt.Sprintf("%s%s", t, timeFlag)
+	case strings.Contains(title, "：") || strings.Contains(title, ":"):
+		var (
+			hourStr string
+			result  string
+		)
+		if strings.Contains(title, "：") {
+			splitStr := strings.Split(title, "：")
+			inputHour := reNum(splitStr[0])
+			inputMin := reNum(splitStr[1])
+			inputHourInt, _ := strconv.Atoi(splitStr[0])
+			y, m, d := didaNow.Date()
+			if inputHourInt > 12 {
+				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, inputHour, inputMin, timeFlag)
+			} else {
+				currentHour, _ := strconv.Atoi(strings.Split(strings.Split(didaNow.String(), " ")[1], ":")[0])
+				if currentHour > 4 {
+					hourStr = strconv.Itoa(inputHourInt + 4)
+				} else {
+					hourStr = inputHour
+				}
+				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
+			}
+			stream <- result
+
 		} else {
-			stream <- fmt.Sprintf("%s%s", didaNow.Format("2006-01-02T15:04:05"), timeFlag)
+			splitStr := strings.Split(title, ":")
+			inputHour := reNum(splitStr[0])
+			inputMin := reNum(splitStr[1])
+			inputHourInt, _ := strconv.Atoi(splitStr[0])
+			y, m, d := didaNow.Date()
+			if inputHourInt > 12 {
+				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, inputHour, inputMin, timeFlag)
+			} else {
+				currentHour, _ := strconv.Atoi(strings.Split(strings.Split(didaNow.String(), " ")[1], ":")[0])
+				if currentHour > 4 {
+					hourStr = strconv.Itoa(inputHourInt + 4)
+				} else {
+					hourStr = inputHour
+				}
+				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
+			}
+			stream <- result
 		}
+
+	case (strings.Contains(title, "点") && strings.Contains(title, "分")) && !strings.Contains(title, "点半") && !(strings.Contains(title, "下午") || strings.Contains(title, "晚上")):
+		var hourStr string
+		inputHour := getSpecialStr(strings.Split(title, "点")[0])
+		inputMin := getSpecialStr(strings.Split(strings.Split(title, "点")[1], "分")[0])
+		inputHourInt, _ := strconv.Atoi(inputHour)
+		y, m, d := didaNow.Date()
+		currentHour, _ := strconv.Atoi(strings.Split(strings.Split(didaNow.String(), " ")[1], ":")[0])
+
+		if currentHour > 4 {
+			hourStr = strconv.Itoa(inputHourInt + 4)
+		} else {
+			hourStr = inputHour
+		}
+		dateStr := fmt.Sprintf("%v-%v-%vT%s:%s:00", y, switchMonth(m.String()), d, hourStr, inputMin)
+		stream <- fmt.Sprintf("%v%s", dateStr, timeFlag)
 
 	case strings.Contains(title, "点") && !strings.Contains(title, "点半") && !(strings.Contains(title, "下午") || strings.Contains(title, "晚上")):
-		var result string
+		var (
+			//result  string
+			timeStr string
+		)
 		splitStr := strings.Split(title, "点")
-		timeStr := getStr(splitStr[0])
+		inputHour := getStr(splitStr[0])
+		inputHourInt, _ := strconv.Atoi(inputHour)
 		y, m, d := didaNow.Date()
+		currentHour, _ := strconv.Atoi(strings.Split(strings.Split(didaNow.String(), " ")[1], ":")[0])
+		if currentHour > 4 {
+			timeStr = strconv.Itoa(inputHourInt + 4)
+		} else {
+			timeStr = inputHour
+		}
 		dateStr := fmt.Sprintf("%v-%v-%v %s:00:00", y, switchMonth(m.String()), d, timeStr)
 		timePattern, _ := time.Parse("2006-01-02 15:04:05", dateStr)
-		resultTime := timePattern.Add(8 * h)
-		_, _, currt := resultTime.Date()
-		tomorrow := timePattern.Add(8 * h)
-		_, _, td := tomorrow.Date()
-		if currt != td {
-			result = tomorrow.Format("2006-01-02T15:04:05")
-		} else {
-			result = resultTime.Format("2006-01-02T15:04:05")
-		}
-		stream <- fmt.Sprintf("%v%s", result, timeFlag)
+
+		stream <- fmt.Sprintf("%v%s", timePattern, timeFlag)
 
 	default:
 		stream <- fmt.Sprintf("%s%s", didaNow.Format("2006-01-02T15:04:05"), timeFlag)
@@ -208,6 +263,11 @@ func reNum(title string) (num string) {
 
 func getSpecialStr(origin string) (Fixed string) {
 	length := len([]rune(origin))
+	getNum := reNum(origin)
+	if getNum != "" {
+		return getNum
+	}
+
 	switch {
 	case strings.Contains(origin, "十"):
 		if length == 1 {
