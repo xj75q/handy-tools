@@ -182,7 +182,9 @@ func switchTime(ctx context.Context, title string) {
 			inputHourInt, _ := strconv.Atoi(splitStr[0])
 			y, m, d := didaNow.Date()
 			if inputHourInt > 12 {
-				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, inputHour, inputMin, timeFlag)
+				hourInt := inputHourInt - 8
+				result = fmt.Sprintf("%v-%v-%vT%v:%s:00%s", y, switchMonth(m.String()), d, hourInt, inputMin, timeFlag)
+
 			} else {
 				currentHour, _ := strconv.Atoi(strings.Split(strings.Split(didaNow.String(), " ")[1], ":")[0])
 				if currentHour > 4 {
@@ -190,7 +192,7 @@ func switchTime(ctx context.Context, title string) {
 				} else {
 					hourStr = inputHour
 				}
-				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
+				result = fmt.Sprintf("%v-%v-%vT%s:%s:00%s", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
 			}
 			stream <- result
 
@@ -201,7 +203,8 @@ func switchTime(ctx context.Context, title string) {
 			inputHourInt, _ := strconv.Atoi(splitStr[0])
 			y, m, d := didaNow.Date()
 			if inputHourInt > 12 {
-				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, inputHour, inputMin, timeFlag)
+				hourInt := inputHourInt - 8
+				result = fmt.Sprintf("%v-%v-%vT%v:%s:00%s", y, switchMonth(m.String()), d, hourInt, inputMin, timeFlag)
 			} else {
 				currentHour, _ := strconv.Atoi(strings.Split(strings.Split(didaNow.String(), " ")[1], ":")[0])
 				if currentHour > 4 {
@@ -209,7 +212,7 @@ func switchTime(ctx context.Context, title string) {
 				} else {
 					hourStr = inputHour
 				}
-				result = fmt.Sprintf("%v-%v-%vT%s:%s%s:00", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
+				result = fmt.Sprintf("%v-%v-%vT%s:%s:00%s", y, switchMonth(m.String()), d, hourStr, inputMin, timeFlag)
 			}
 			stream <- result
 		}
