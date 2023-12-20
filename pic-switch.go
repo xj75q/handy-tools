@@ -6,20 +6,31 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+	"time"
 )
 
 var (
 	commandName = "convert"
 	outType     = ".jpg"
+	picWorkers  = runtime.NumCPU()
 )
 
 type fileInfo struct {
-	fPath string
+	fPath     string
+	wg        *sync.WaitGroup
+	eventChan chan interface{}
+	exitChan  chan bool
 }
 
 func handlerPic() *fileInfo {
-	return &fileInfo{}
+	return &fileInfo{
+		wg:        new(sync.WaitGroup),
+		eventChan: make(chan interface{}, 20),
+		exitChan:  make(chan bool, 1),
+	}
 }
 
 func (f *fileInfo) judgeFileType(flag string) bool {
@@ -31,6 +42,9 @@ func (f *fileInfo) judgeFileType(flag string) bool {
 		return true
 
 	case "jpeg":
+		return true
+
+	case "bmp":
 		return true
 
 	default:
@@ -50,7 +64,8 @@ func isFile(path string) bool {
 	return !isDir(path)
 }
 
-func (f *fileInfo) executeSwitch() error {
+func (f *fileInfo) executeSwitch() {
+
 	err := filepath.Walk(f.fPath, func(pathAndFilename string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -59,47 +74,82 @@ func (f *fileInfo) executeSwitch() error {
 		flag := infoName[len(infoName)-1]
 		isPicType := f.judgeFileType(flag)
 		if isFile(pathAndFilename) && isPicType {
-			picName := strings.Join(infoName[:len(infoName)-1], "")
-			outlist := strings.Split(pathAndFilename, string(os.PathSeparator))
-			final := outlist[:len(outlist)-1]
-			outpath := strings.Join(final, "/") + string(os.PathSeparator)
-			if strings.Contains(picName, "!") && len(picName) > 40 {
-				content := strings.Split(picName, "!")[0]
-				outName := content[32:] + outType
-				outContent := outpath + outName
-				cmd := exec.Command(commandName, pathAndFilename, outContent)
-				err := cmd.Run()
-				if err != nil {
-					return err
-				}
-			} else if len(picName) > 15 && len(picName) < 25 {
-				outName := picName[15:] + outType
-				outContent := outpath + string(os.PathSeparator) + outName
-				cmd := exec.Command(commandName, pathAndFilename, outContent)
-				err := cmd.Run()
-				if err != nil {
-					return err
-				}
-			} else {
-				outContent := outpath + string(os.PathSeparator) + info.Name()
-				cmd := exec.Command(commandName, pathAndFilename, outContent)
-				err := cmd.Run()
-				if err != nil {
-					return err
-				}
-			}
-			fmt.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
-			if err := os.Remove(pathAndFilename); err != nil {
-				return err
-			}
+			var fInfo = make(map[string]interface{})
+			fInfo[pathAndFilename] = info
+			f.wg.Add(1)
+			go func() {
+				defer f.wg.Done()
+				f.eventChan <- fInfo
+			}()
+			return nil
 		}
-
 		return nil
 	})
 	if err != nil {
-		return err
+		fmt.Println(err.Error())
 	}
-	return nil
+
+}
+
+func (f *fileInfo) handleEventStream() {
+	defer f.wg.Done()
+	for {
+		select {
+		case picStream := <-f.eventChan:
+			f.convertPic(picStream)
+		default:
+			return
+		}
+	}
+}
+
+func (f *fileInfo) convertPic(picStream interface{}) {
+
+	fInfo := picStream.(map[string]interface{})
+	for pathAndFilename, value := range fInfo {
+		info := value.(os.FileInfo)
+		infoName := strings.Split(strings.ToLower(info.Name()), ".")
+		picName := strings.Join(infoName[:len(infoName)-1], "")
+		outlist := strings.Split(pathAndFilename, string(os.PathSeparator))
+		final := outlist[:len(outlist)-1]
+		outpath := strings.Join(final, "/") + string(os.PathSeparator)
+		if strings.Contains(picName, "!") && len(picName) > 40 {
+			content := strings.Split(picName, "!")[0]
+			outName := content[32:] + outType
+			outContent := outpath + outName
+			cmd := exec.Command(commandName, pathAndFilename, outContent)
+			if err := cmd.Start(); err != nil {
+				fmt.Println(err.Error())
+			}
+			if err := cmd.Wait(); err != nil {
+				fmt.Println(err.Error())
+			}
+		} else if len(picName) > 15 && len(picName) < 25 {
+			outName := picName[15:] + outType
+			outContent := outpath + string(os.PathSeparator) + outName
+			cmd := exec.Command(commandName, pathAndFilename, outContent)
+			if err := cmd.Start(); err != nil {
+				fmt.Println(err.Error())
+			}
+			if err := cmd.Wait(); err != nil {
+				fmt.Println(err.Error())
+			}
+		} else {
+			outContent := outpath + string(os.PathSeparator) + info.Name()
+			cmd := exec.Command(commandName, pathAndFilename, outContent)
+			if err := cmd.Start(); err != nil {
+				fmt.Println(err.Error())
+			}
+
+			if err := cmd.Wait(); err != nil {
+				fmt.Println(err.Error())
+			}
+		}
+
+		fmt.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
+		time.Sleep(1 * time.Second)
+		os.Remove(pathAndFilename)
+	}
 }
 
 func main() {
@@ -107,12 +157,27 @@ func main() {
 	flag.StringVar(&ph.fPath, "i", "", "请输入路径")
 	flag.Parse()
 	if ph.fPath == "" {
-		panic("文件路径不能为空，请再次输入！！！")
+		fmt.Println("文件路径不能为空，请再次输入！！！")
+		os.Exit(0)
 	} else if ph.fPath == "./" {
 		ph.fPath, _ = os.Getwd()
 	}
-	err := ph.executeSwitch()
-	if err != nil {
-		panic(fmt.Errorf("执行出错：%s\n", err))
-	}
+	now := time.Now()
+	defer func() {
+		cost := time.Since(now).String()
+		fmt.Printf("总耗时为：%s\n", cost)
+	}()
+	defer close(ph.eventChan)
+	ph.executeSwitch()
+
+	ph.wg.Add(1)
+	go func() {
+		defer ph.wg.Done()
+		for i := 1; i < picWorkers; i++ {
+			ph.wg.Add(1)
+			go ph.handleEventStream()
+		}
+	}()
+
+	ph.wg.Wait()
 }
