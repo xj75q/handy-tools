@@ -149,20 +149,22 @@ func (f *fieldName) sortLayer(ctx *cli.Context, layerList []string) {
 
 func (f *fieldName) generateFileNum(ctx *cli.Context, layerList []string, numList []map[string]int) {
 	var newfile string
-	for _, layer := range layerList {
-		pathInfo := strings.Split(layer, pathMark)
-		key := strings.Join(pathInfo[:len(pathInfo)-1], pathMark)
-		fileType := strings.Split(layer, ".")
-		fname := strings.Join(pathInfo[len(pathInfo)-2:len(pathInfo)-1], pathMark)
-		ftype := strings.Join(fileType[len(fileType)-1:], "")
-		for _, fileNum := range numList {
-			if fileNum[key] != 0 {
-				newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, fname, fileNum[key], ftype)
-				f.newFileChan <- newfile
-				delete(fileNum, key)
+	go func() {
+		for _, layer := range layerList {
+			pathInfo := strings.Split(layer, pathMark)
+			key := strings.Join(pathInfo[:len(pathInfo)-1], pathMark)
+			fileType := strings.Split(layer, ".")
+			fname := strings.Join(pathInfo[len(pathInfo)-2:len(pathInfo)-1], pathMark)
+			ftype := strings.Join(fileType[len(fileType)-1:], "")
+			for _, fileNum := range numList {
+				if fileNum[key] != 0 {
+					newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, fname, fileNum[key], ftype)
+					f.newFileChan <- newfile
+					delete(fileNum, key)
+				}
 			}
 		}
-	}
+	}()
 
 	f.manageLayer(layerList)
 
@@ -344,7 +346,6 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 
 var (
 	handler = NewHandler()
-
 	authors = []*cli.Author{
 		{
 			Name: "developed by qxz",
@@ -390,7 +391,7 @@ var (
 					handler.inputPath = inPath
 				}
 				handler.inputFileInfo(ctx)
-				time.Sleep(1 * time.Second)
+				time.Sleep(500 * time.Millisecond)
 				handler.usePathName(ctx)
 				return nil
 			},
@@ -430,6 +431,7 @@ var (
 					handler.inputPath = inPath
 				}
 				handler.inputFileInfo(ctx)
+				time.Sleep(500 * time.Millisecond)
 				handler.replaceFileName(ctx)
 				return nil
 			},
@@ -465,6 +467,7 @@ var (
 					handler.inputPath = inPath
 				}
 				handler.inputFileInfo(ctx)
+				time.Sleep(500 * time.Millisecond)
 				handler.addFileName(ctx)
 				return nil
 			},
@@ -499,7 +502,7 @@ var (
 					handler.inputPath = inPath
 				}
 				handler.inputFileInfo(ctx)
-
+				time.Sleep(500 * time.Millisecond)
 				handler.subFileName(ctx)
 
 				return nil
