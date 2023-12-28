@@ -19,6 +19,7 @@ type fieldName struct {
 	outputPath   string
 	oldName      string
 	newName      string
+	sameFileName string
 	nameFormPath bool
 	addStr       string
 	nameLoc      bool
@@ -72,14 +73,6 @@ func (f *fieldName) inputFileInfo(ctx *cli.Context) error {
 	return err
 }
 
-type flayer struct {
-}
-
-func layerHandler() *flayer {
-	return &flayer{}
-
-}
-
 func (f *fieldName) usePathName(ctx *cli.Context) error {
 	if f.nameFormPath == false {
 		return nil
@@ -90,7 +83,6 @@ func (f *fieldName) usePathName(ctx *cli.Context) error {
 	for {
 		select {
 		case chanInfo := <-f.fileInfoChan:
-			var newFile string
 			finfo := chanInfo.(map[string]interface{})
 			for path, value := range finfo {
 				Info := value.(os.FileInfo)
@@ -103,8 +95,6 @@ func (f *fieldName) usePathName(ctx *cli.Context) error {
 				} else {
 					count++
 					newfile := fmt.Sprintf("%s%s%s-%v.%s", fpath, pathMark, pathName, count, strings.Split(Info.Name(), ".")[1])
-					fmt.Sprintln(path, newFile)
-
 					err := os.Rename(path, newfile)
 					if err != nil {
 						return err
@@ -117,7 +107,6 @@ func (f *fieldName) usePathName(ctx *cli.Context) error {
 			f.sortLayer(ctx, layerList)
 			return nil
 		}
-
 	}
 }
 
@@ -156,10 +145,16 @@ func (f *fieldName) generateFileNum(ctx *cli.Context, layerList []string, numLis
 			fileType := strings.Split(layer, ".")
 			fname := strings.Join(pathInfo[len(pathInfo)-2:len(pathInfo)-1], pathMark)
 			ftype := strings.Join(fileType[len(fileType)-1:], "")
+
 			for _, fileNum := range numList {
 				if fileNum[key] != 0 {
-					newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, fname, fileNum[key], ftype)
-					f.newFileChan <- newfile
+					if f.nameFormPath == true {
+						newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, fname, fileNum[key], ftype)
+						f.newFileChan <- newfile
+					} else {
+						newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, f.sameFileName, fileNum[key], ftype)
+						f.newFileChan <- newfile
+					}
 					delete(fileNum, key)
 				}
 			}
@@ -174,7 +169,6 @@ func (f *fieldName) manageLayer(layerList []string) {
 	for _, layer := range layerList {
 		select {
 		case newfile := <-f.newFileChan:
-			//fmt.Println("^^^^", layer, newfile)
 			err := os.Rename(layer, newfile)
 			if err != nil {
 				fmt.Println(err.Error())
@@ -182,7 +176,38 @@ func (f *fieldName) manageLayer(layerList []string) {
 			fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
 		}
 	}
+}
 
+func (f *fieldName) useSameName(ctx *cli.Context) error {
+	count := 0
+	var layerList = []string{}
+	for {
+		select {
+		case chanInfo := <-f.fileInfoChan:
+			finfo := chanInfo.(map[string]interface{})
+			for path, value := range finfo {
+				Info := value.(os.FileInfo)
+				pathInfo := strings.Split(path, pathMark)
+				fpath := strings.Join(pathInfo[:len(pathInfo)-1], pathMark)
+				if strings.Compare(fpath, filepath.Clean(f.inputPath)) == 1 {
+					layerList = append(layerList, path)
+				} else {
+					count++
+					newfile := fmt.Sprintf("%s%s%s-%v.%s", fpath, pathMark, f.sameFileName, count, strings.Split(Info.Name(), ".")[1])
+
+					err := os.Rename(path, newfile)
+					if err != nil {
+						return err
+					}
+					fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
+				}
+
+			}
+		default:
+			f.sortLayer(ctx, layerList)
+			return nil
+		}
+	}
 }
 
 func (f *fieldName) uniquefname(array []string) []string {
@@ -212,7 +237,6 @@ func (f *fieldName) replaceFileName(ctx *cli.Context) error {
 				fpath := strings.Join(pathInfo[:len(pathInfo)-1], pathMark)
 				newname := strings.ReplaceAll(infoName[0], f.oldName, f.newName)
 				newfile := fmt.Sprintf("%s%s%s.%s", fpath, pathMark, newname, infoName[1])
-				//fmt.Println(path, newfile)
 
 				err := os.Rename(path, newfile)
 				if err != nil {
@@ -372,6 +396,7 @@ var (
 		{
 			Name:    "usepathname",
 			Aliases: []string{"use"},
+			Usage:   "使用文件名称作为新文件的名字",
 			Flags: []cli.Flag{
 				&cli.BoolFlag{
 					Name:     "frompath",
@@ -393,6 +418,40 @@ var (
 				handler.inputFileInfo(ctx)
 				time.Sleep(500 * time.Millisecond)
 				handler.usePathName(ctx)
+				return nil
+			},
+		},
+		{
+			Name:    "samename",
+			Aliases: []string{"same"},
+			Usage:   "使用相同名字作为文件名",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:     "name",
+					Aliases:  []string{"n"},
+					Usage:    "请输入要使用的名字",
+					Required: false,
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				sameName := ctx.String("name")
+				if sameName == "" {
+					fmt.Println("使用的新名字不能为空，请填写正确的文件名")
+					os.Exit(0)
+				} else {
+					handler.sameFileName = sameName
+				}
+				handler.outputPath = ctx.String("output")
+				inPath := ctx.String("input")
+				if inPath == "./" {
+					handler.inputPath, _ = os.Getwd()
+				} else {
+					handler.inputPath = inPath
+				}
+				handler.inputFileInfo(ctx)
+				time.Sleep(500 * time.Millisecond)
+
+				handler.useSameName(ctx)
 				return nil
 			},
 		},
@@ -501,6 +560,7 @@ var (
 				} else {
 					handler.inputPath = inPath
 				}
+
 				handler.inputFileInfo(ctx)
 				time.Sleep(500 * time.Millisecond)
 				handler.subFileName(ctx)
@@ -510,10 +570,6 @@ var (
 		},
 	}
 )
-
-func changeInputFileStr() {
-
-}
 
 func main() {
 	defer close(handler.fileInfoChan)
