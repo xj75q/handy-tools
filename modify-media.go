@@ -225,7 +225,6 @@ func (p *param) switchVideo() error {
 				go func() {
 					batch.eventQueue <- fInfo
 				}()
-
 				return nil
 			}
 		case "audio":
@@ -249,19 +248,22 @@ func (p *param) switchVideo() error {
 func (p *param) generateCmdStr(input *param, inName, outName string) (args []string) {
 	if input.ftype == "video" {
 		if input.volume == 0 {
-			args = []string{"-i", inName, outName}
+			args = []string{"-y", "-i", inName, outName}
 			return
 		} else {
-			args = []string{"-i", inName, "-filter:a", fmt.Sprintf("volume=%vdB", input.volume), outName}
+			args = []string{"-y", "-i", inName, "-filter:a", fmt.Sprintf("volume=%vdB", input.volume), outName}
 			return
 		}
 
 	} else if input.ftype == "audio" {
 		if input.volume != 0 && input.speed == 0 {
-			args = []string{"-i", inName, "-filter:a", fmt.Sprintf("volume=%vdB", input.volume), outName}
+			args = []string{"-y", "-i", inName, "-filter:a", fmt.Sprintf("volume=%vdB", input.volume), outName}
 			return
 		} else if input.volume == 0 && input.speed != 0 {
-			args = []string{"-i", inName, "-filter:a", fmt.Sprintf("atempo=%v", input.speed), "-vn", outName}
+			args = []string{"-y", "-i", inName, "-filter:a", fmt.Sprintf("atempo=%v", input.speed), "-vn", outName}
+			return
+		} else {
+			args = []string{"-y", "-i", inName, "-filter:a", fmt.Sprintf("atempo=%v,volume=%vdB", input.speed, input.volume), "-vn", outName}
 			return
 		}
 	}
@@ -290,8 +292,8 @@ func (p *param) switchFile(fInfo interface{}) {
 			outName = info.outPut + pathFlag + fName
 		} else {
 			outName = pathInfo + pathFlag + fName
-		}
 
+		}
 		cmdArgs := p.generateCmdStr(info, key, outName)
 
 		cmd := exec.Command(commandFfmpeg, cmdArgs...)
@@ -308,7 +310,6 @@ func (p *param) switchFile(fInfo interface{}) {
 			tmp := make([]byte, 1024)
 			_, err := stdout.Read(tmp)
 			data := string(tmp)
-
 			if strings.Contains(data, "muxing overhead") {
 				fmt.Printf(">> 将 %s 目录下的文件转换成 %s 成功...\n", pathInfo, fName)
 			}
@@ -318,7 +319,7 @@ func (p *param) switchFile(fInfo interface{}) {
 		}
 
 		if err := cmd.Wait(); err != nil {
-			fmt.Println(err.Error())
+			fmt.Printf(">> exec err:%v\n", err.Error())
 		}
 
 	}
@@ -327,7 +328,7 @@ func (p *param) switchFile(fInfo interface{}) {
 
 var (
 	rootCmd = &cobra.Command{
-		Short: "【音视频转换工具】默认将视频转换成 mp3 音频格式",
+		Short: "【音视频转换工具】，默认将视频转换成mp3音频格式",
 		Run: func(cmd *cobra.Command, args []string) {
 			input := inputHandler()
 			inpath, _ := cmd.Flags().GetString("input")
@@ -338,9 +339,18 @@ var (
 			}
 
 			input.outPut, _ = cmd.Flags().GetString("output")
-			input.ftype, _ = cmd.Flags().GetString("type")
-			input.volume, _ = cmd.Flags().GetInt64("volume")
-			input.speed, _ = cmd.Flags().GetFloat64("speed")
+
+			fileType, _ := cmd.Flags().GetString("type")
+			volume, _ := cmd.Flags().GetInt64("volume")
+			speed, _ := cmd.Flags().GetFloat64("speed")
+			if fileType == "audio" && (volume == 0 && speed == 0) {
+				fmt.Println(">> 请填入转换音频所使用参数...")
+				os.Exit(0)
+			}
+
+			input.ftype = fileType
+			input.volume = volume
+			input.speed = speed
 			input.switchVideo()
 		},
 	}
