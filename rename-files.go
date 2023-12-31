@@ -94,7 +94,7 @@ func (f *fieldName) usePathName(ctx *cli.Context) error {
 					layerList = append(layerList, path)
 				} else {
 					count++
-					newfile := fmt.Sprintf("%s%s%s-%v.%s", fpath, pathMark, pathName, count, strings.Split(Info.Name(), ".")[1])
+					newfile := fmt.Sprintf("%s%s%s-%v.%s", fpath, pathMark, pathName, fmt.Sprintf("%02d", count), strings.Split(Info.Name(), ".")[1])
 					err := os.Rename(path, newfile)
 					if err != nil {
 						return err
@@ -149,10 +149,10 @@ func (f *fieldName) generateFileNum(ctx *cli.Context, layerList []string, numLis
 			for _, fileNum := range numList {
 				if fileNum[key] != 0 {
 					if f.nameFormPath == true {
-						newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, fname, fileNum[key], ftype)
+						newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, fname, fmt.Sprintf("%02d", fileNum[key]), ftype)
 						f.newFileChan <- newfile
 					} else {
-						newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, f.sameFileName, fileNum[key], ftype)
+						newfile = fmt.Sprintf("%s%s%s-%v.%s", key, pathMark, f.sameFileName, fmt.Sprintf("%02d", fileNum[key]), ftype)
 						f.newFileChan <- newfile
 					}
 					delete(fileNum, key)
@@ -193,7 +193,7 @@ func (f *fieldName) useSameName(ctx *cli.Context) error {
 					layerList = append(layerList, path)
 				} else {
 					count++
-					newfile := fmt.Sprintf("%s%s%s-%v.%s", fpath, pathMark, f.sameFileName, count, strings.Split(Info.Name(), ".")[1])
+					newfile := fmt.Sprintf("%s%s%s-%v.%s", fpath, pathMark, f.sameFileName, fmt.Sprintf("%02d", count), strings.Split(Info.Name(), ".")[1])
 
 					err := os.Rename(path, newfile)
 					if err != nil {
