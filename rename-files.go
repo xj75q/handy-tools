@@ -5,7 +5,9 @@ import (
 	"github.com/urfave/cli/v2"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -20,6 +22,7 @@ type fieldName struct {
 	oldName      string
 	newName      string
 	sameFileName string
+	preNum       int
 	nameFormPath bool
 	addStr       string
 	nameLoc      bool
@@ -299,7 +302,6 @@ func (f *fieldName) addFileName(ctx *cli.Context) error {
 }
 
 func (f *fieldName) subFileName(ctx *cli.Context) {
-
 	for {
 		select {
 		case chanInfo := <-f.fileInfoChan:
@@ -361,6 +363,59 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 				default:
 					return
 
+				}
+
+			}
+		default:
+			return
+		}
+	}
+}
+
+func (f *fieldName) reNum(title string) (num string) {
+	reg, _ := regexp.Compile("\\d+")
+	num = reg.FindString(title)
+	return
+}
+
+func (f *fieldName) ChangeNum(ctx *cli.Context) {
+	for {
+		select {
+		case chanInfo := <-f.fileInfoChan:
+			finfo := chanInfo.(map[string]interface{})
+			for path, value := range finfo {
+				info := value.(os.FileInfo)
+				pathInfo := strings.Split(path, pathMark)
+				pinfo := strings.Join(pathInfo[:len(pathInfo)-1], pathMark)
+				finfo := strings.Split(info.Name(), ".")
+				fname := strings.Join(finfo[:len(finfo)-1], "")
+				serial := f.reNum(fname)
+				sLength := len(serial)
+				numArgs := []string{"%", "0", strconv.Itoa(f.preNum), "d"}
+				digit := strings.Join(numArgs, "")
+				sNumInt, _ := strconv.Atoi(serial)
+				snum := fmt.Sprintf(digit, sNumInt)
+				nameSplit := strings.Split(fname, serial)
+				if f.preNum == 2 && sLength == 1 {
+					newfile := fmt.Sprintf("%s%s%s%s%s.%s", pinfo, pathMark, nameSplit[0], snum, nameSplit[1], finfo[1])
+					//fmt.Println(newfile)
+					err := os.Rename(path, newfile)
+					if err != nil {
+						fmt.Println(err.Error())
+						return
+					}
+					fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
+				}
+
+				if f.preNum > 2 {
+					newfile := fmt.Sprintf("%s%s%s%s%s.%s", pinfo, pathMark, nameSplit[0], snum, nameSplit[1], finfo[1])
+					//fmt.Println(newfile)
+					err := os.Rename(path, newfile)
+					if err != nil {
+						fmt.Println(err.Error())
+						return
+					}
+					fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
 				}
 
 			}
@@ -457,6 +512,41 @@ var (
 				return nil
 			},
 		},
+		{
+			Name:    "altersn",
+			Aliases: []string{"sn"},
+			Usage:   "补齐文件前缀的数字",
+			Flags: []cli.Flag{
+				&cli.IntFlag{
+					Name:     "serial",
+					Aliases:  []string{"s"},
+					Usage:    "序号如需补齐2位，填写2；或者填写其他任意位数",
+					Value:    2,
+					Required: false,
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				serial := ctx.Int("serial")
+				if serial < 2 || serial >= 30 {
+					fmt.Println(">> 请输入正确的补齐位数...")
+					os.Exit(0)
+				}
+				handler.preNum = serial
+				handler.outputPath = ctx.String("output")
+				inPath := ctx.String("input")
+				if inPath == "./" {
+					handler.inputPath, _ = os.Getwd()
+				} else {
+					handler.inputPath = inPath
+				}
+				handler.inputFileInfo(ctx)
+				time.Sleep(500 * time.Millisecond)
+
+				handler.ChangeNum(ctx)
+				return nil
+			},
+		},
+
 		{
 
 			Name:      "replace",
