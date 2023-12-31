@@ -299,6 +299,7 @@ func (f *fieldName) addFileName(ctx *cli.Context) error {
 }
 
 func (f *fieldName) subFileName(ctx *cli.Context) {
+
 	for {
 		select {
 		case chanInfo := <-f.fileInfoChan:
@@ -313,7 +314,9 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 
 				pathInfo := strings.Split(path, pathMark)
 				fpath := strings.Join(pathInfo[:len(pathInfo)-1], pathMark)
-				strIndex := strings.Index(finfo[0], f.subStr)
+
+				firstIndex := strings.Index(finfo[0], f.subStr)
+				lastIndex := strings.LastIndex(finfo[0], f.subStr)
 				switch {
 				case f.subLoc == "all":
 					newName = strings.ReplaceAll(finfo[0], f.subStr, "")
@@ -328,7 +331,7 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 					}
 					fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
 				case f.subLoc == "left":
-					if strIndex == 0 {
+					if firstIndex == 0 {
 						newName = strings.TrimLeft(finfo[0], f.subStr)
 						newfile := fmt.Sprintf("%s%s%s.%s", fpath, pathMark, newName, finfo[1])
 
@@ -343,12 +346,10 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 					}
 
 				case f.subLoc == "right":
-					if strIndex == len([]rune(finfo[0]))-1 {
+					if lastIndex == len(finfo[0])-1 {
 						newName = strings.TrimRight(finfo[0], f.subStr)
 						newfile := fmt.Sprintf("%s%s%s.%s", fpath, pathMark, newName, finfo[1])
-
 						//fmt.Println("*****", path, newfile)
-
 						err := os.Rename(path, newfile)
 						if err != nil {
 							fmt.Println(err.Error())
@@ -363,7 +364,8 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 				}
 
 			}
-
+		default:
+			return
 		}
 	}
 }
