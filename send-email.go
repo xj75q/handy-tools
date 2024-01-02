@@ -19,7 +19,7 @@ var (
 	exePath, _       = os.Executable()
 	file_path        = filepath.Dir(exePath)
 	year, month, day = time.Now().Date()
-	subject          = fmt.Sprintf("【随手记】 %v-%v-%v", year, int(month), day)
+	subject          = fmt.Sprintf("【随手记】 %v-%v-%v", year, fmt.Sprintf("%02d", int(month)), fmt.Sprintf("%02d", day))
 )
 
 type CfgInfo struct {
