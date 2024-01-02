@@ -73,23 +73,19 @@ func htmlHandler() *htmlParams {
 func (c *cfg) initConfig() (error, string) {
 	file := filepath.Clean(fpath + string(os.PathSeparator) + fname)
 	_, err := os.Stat(file)
-	if err != nil {
-		if os.IsNotExist(err) {
-			createFile, _ := os.Create(file)
-			rb, _ := json.Marshal(c.Content)
-			_, err := createFile.Write(rb)
-			if err != nil {
-				return fmt.Errorf("创建并写入文件失败，请检查..."), ""
-			} else {
-				return nil, fmt.Sprintln(">> 登录并将配置文件初始化成功...")
-			}
+	if err != nil && os.IsNotExist(err) {
+		createFile, _ := os.Create(file)
+		rb, _ := json.Marshal(c.Content)
+		_, err := createFile.Write(rb)
+		if err != nil {
+			return fmt.Errorf("创建并写入文件失败，请检查..."), ""
 		} else {
-			fmt.Printf("无法判断文件 %s 是否存在：%v\n", file, err)
+			return nil, fmt.Sprintln(">> 登录并将配置文件初始化成功...")
 		}
 	} else {
 		result, _ := json.MarshalIndent(c.Content, "", "")
 		_ = ioutil.WriteFile(file, result, 0644)
-		return nil, fmt.Sprintln(">> 设置清单项目名成功...")
+		return nil, fmt.Sprintln(">> 更新清单项目名成功...")
 	}
 	return nil, ""
 }
@@ -476,6 +472,6 @@ func main() {
 		os.Exit(1)
 	}
 	//c := cfgHandler()
-	//c.recordText("8:15", "", "", "")
+	//c.recordText("15:15", "", "", "")
 
 }

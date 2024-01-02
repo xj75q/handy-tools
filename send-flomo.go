@@ -48,19 +48,15 @@ func (f *ConfigFile) isFileExist(fpath string) (error, string) {
 	file := filepath.Clean(fi)
 
 	_, err := os.Stat(file)
-	if err != nil {
-		if os.IsNotExist(err) {
-			createFile, _ := os.Create(file)
-			jsonStr := `{"flomoApi":""}`
-			_, err := createFile.WriteString(jsonStr)
-			if err != nil {
-				return fmt.Errorf("创建并写入文件失败，请检查目录权限"), ""
-			} else {
-				fmt.Println(">> flomo配置文件初始化成功，请填入你的API")
-				return nil, "success"
-			}
+	if err != nil && os.IsNotExist(err) {
+		createFile, _ := os.Create(file)
+		jsonStr := `{"flomoApi":""}`
+		_, err := createFile.WriteString(jsonStr)
+		if err != nil {
+			return fmt.Errorf("创建并写入文件失败，请检查目录权限"), ""
 		} else {
-			fmt.Printf("无法判断文件 %s 是否存在：%v\n", file, err)
+			fmt.Println(">> flomo配置文件初始化成功，请填入你的API")
+			return nil, "success"
 		}
 	} else {
 		err, url := f.ReadConfig()

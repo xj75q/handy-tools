@@ -71,20 +71,17 @@ func (f *Cfg) CreateConfig(fpath string) (error, string) {
 	fi := fpath + string(os.PathSeparator) + f.FileName
 	file := filepath.Clean(fi)
 	_, err := os.Stat(file)
-	if err != nil {
-		if os.IsNotExist(err) {
-			createFile, _ := os.Create(file)
-			rb, _ := json.Marshal(f.Content)
-			_, err := createFile.Write(rb)
-			if err != nil {
-				return fmt.Errorf("创建并写入文件失败，请检"), ""
-			} else {
-				fmt.Println(">> 邮箱配置文件初始化成功")
-				return nil, "success"
-			}
+	if err != nil && os.IsNotExist(err) {
+		createFile, _ := os.Create(file)
+		rb, _ := json.Marshal(f.Content)
+		_, err := createFile.Write(rb)
+		if err != nil {
+			return fmt.Errorf("创建并写入文件失败，请检"), ""
 		} else {
-			fmt.Printf("无法判断文件 %s 是否存在：%v\n", file, err)
+			fmt.Println(">> 邮箱配置文件初始化成功")
+			return nil, "success"
 		}
+
 	} else {
 		var data CfgInfo
 		bytes, _ := ioutil.ReadFile(file)
