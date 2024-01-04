@@ -24,6 +24,7 @@ type fieldName struct {
 	sameFileName string
 	preNum       int
 	nameFormPath bool
+	removeSpace  bool
 	addStr       string
 	nameLoc      bool
 	subStr       string
@@ -425,6 +426,33 @@ func (f *fieldName) ChangeNum(ctx *cli.Context) {
 	}
 }
 
+func (f *fieldName) rmSpace(ctx *cli.Context) {
+	for {
+		select {
+		case chanInfo := <-f.fileInfoChan:
+			finfo := chanInfo.(map[string]interface{})
+			for path, value := range finfo {
+				info := value.(os.FileInfo)
+				pathInfo := strings.Split(path, pathMark)
+				nameInfo := strings.Split(info.Name(), ".")
+				newName := strings.Replace(nameInfo[0], " ", "", -1)
+				newfile := fmt.Sprintf("%s%s%s.%s", strings.Join(pathInfo[:len(pathInfo)-1], pathMark), pathMark, newName, nameInfo[1])
+				//fmt.Println(newfile)
+				err := os.Rename(path, newfile)
+				if err != nil {
+					fmt.Println(err.Error())
+					return
+				}
+				fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
+			}
+
+		default:
+			return
+		}
+	}
+
+}
+
 var (
 	handler = NewHandler()
 	authors = []*cli.Author{
@@ -438,7 +466,7 @@ var (
 			Aliases:  []string{"i"},
 			Usage:    "操作文件路径（必填）",
 			Value:    "./",
-			Required: false,
+			Required: true,
 		},
 
 		&cli.StringFlag{
@@ -451,20 +479,25 @@ var (
 
 	cliCommands = []*cli.Command{
 		{
-			Name:    "usepathname",
-			Aliases: []string{"use"},
-			Usage:   "使用文件名称作为新文件的名字",
+			Name:      "usepathname",
+			Aliases:   []string{"use"},
+			Usage:     "使用文件名称作为新文件的名字",
+			UsageText: " ",
 			Flags: []cli.Flag{
 				&cli.BoolFlag{
 					Name:     "frompath",
 					Aliases:  []string{"p"},
-					Usage:    "是否使用文件夹名字，默认为false，如需启用设为true",
-					Value:    false,
+					Usage:    "是否使用文件夹名字，默认为true，如需关闭设为false",
+					Value:    true,
 					Required: false,
 				},
 			},
 			Action: func(ctx *cli.Context) error {
-				handler.nameFormPath = ctx.Bool("p")
+				isUsePath := ctx.Bool("p")
+				if isUsePath == false {
+					return nil
+				}
+				handler.nameFormPath = isUsePath
 				handler.outputPath = ctx.String("output")
 				inPath := ctx.String("input")
 				if inPath == "./" {
@@ -479,9 +512,10 @@ var (
 			},
 		},
 		{
-			Name:    "samename",
-			Aliases: []string{"same"},
-			Usage:   "使用相同名字作为文件名",
+			Name:      "samename",
+			Aliases:   []string{"same"},
+			Usage:     "使用相同名字作为文件名",
+			UsageText: " ",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "name",
@@ -513,9 +547,10 @@ var (
 			},
 		},
 		{
-			Name:    "altersn",
-			Aliases: []string{"sn"},
-			Usage:   "补齐文件前缀的数字",
+			Name:      "altersn",
+			Aliases:   []string{"sn"},
+			Usage:     "补齐文件前缀的数字",
+			UsageText: " ",
 			Flags: []cli.Flag{
 				&cli.IntFlag{
 					Name:     "serial",
@@ -546,13 +581,43 @@ var (
 				return nil
 			},
 		},
+		{
+			Name:      "rmspace",
+			Aliases:   []string{"rms"},
+			Usage:     "删除文件名中的空格",
+			UsageText: " ",
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:     "space",
+					Aliases:  []string{"s"},
+					Usage:    "是否删除文件名中的空格，默认为true，如需更改设为false",
+					Value:    true,
+					Required: false,
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				handler.removeSpace = ctx.Bool("space")
+				handler.outputPath = ctx.String("output")
+				inPath := ctx.String("input")
+				if inPath == "./" {
+					handler.inputPath, _ = os.Getwd()
+				} else {
+					handler.inputPath = inPath
+				}
+				handler.inputFileInfo(ctx)
+				time.Sleep(500 * time.Millisecond)
+
+				handler.rmSpace(ctx)
+				return nil
+			},
+		},
 
 		{
 
 			Name:      "replace",
 			Aliases:   []string{"rep"},
 			Usage:     "替换文件的字符串",
-			UsageText: "",
+			UsageText: " ",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "oldname",
@@ -587,9 +652,10 @@ var (
 				return nil
 			},
 		}, {
-			Name:    "addsign",
-			Aliases: []string{"add"},
-			Usage:   "默认使用new，如果需要修改为其他名称，请填写",
+			Name:      "addsign",
+			Aliases:   []string{"add"},
+			Usage:     "增加文件名标志",
+			UsageText: " ",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "addstr",
@@ -623,9 +689,10 @@ var (
 				return nil
 			},
 		}, {
-			Name:    "substr",
-			Aliases: []string{"sub"},
-			Usage:   "在文件名中删除某个字符",
+			Name:      "substr",
+			Aliases:   []string{"sub"},
+			Usage:     "删除文件名中的某个字符",
+			UsageText: " ",
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:     "subname",
@@ -667,8 +734,8 @@ func main() {
 	defer close(handler.fileInfoChan)
 	app := cli.NewApp()
 	app.Name = "【文件批量重命名】"
-	app.Usage = "input the file path and auto switch to new file"
-	app.Description = ""
+	app.Usage = "秒级文件批量重命名"
+	app.UsageText = "示例：renamef -i 文件夹路径 altersn -s 2"
 	app.Flags = cliFlags
 	app.Commands = cliCommands
 	app.Authors = authors
@@ -679,7 +746,7 @@ func main() {
 	sort.Sort(cli.FlagsByName(app.Flags))
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println(">> 出错了！！！:", err)
+		fmt.Println("\n>> 出错了:", err)
 		os.Exit(0)
 	}
 }
