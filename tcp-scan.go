@@ -3,13 +3,11 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
-)
-
-var (
-	ip = "192.168.155.122"
 )
 
 type netInfo struct {
@@ -28,7 +26,7 @@ func netHandler() *netInfo {
 	}
 }
 
-func (n *netInfo) genAddress() {
+func (n *netInfo) genAddress(ip net.IP) {
 	defer n.Wg.Done()
 	for port := 1; port <= 65535; port++ {
 		address := fmt.Sprintf("%s:%d", ip, port)
@@ -53,12 +51,40 @@ func (n *netInfo) getPort() {
 	}
 }
 
+func (n *netInfo) parseIP(s string) (net.IP, int) {
+	ip := net.ParseIP(s)
+	if ip == nil {
+		return nil, 0
+	}
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '.':
+			return ip, 4
+		case ':':
+			return ip, 6
+		}
+	}
+	return nil, 0
+}
+
 func main() {
-	fmt.Println(">> 开始扫描")
+	input := os.Args[1]
+	if !strings.Contains(input, ".") {
+		fmt.Println(">>请输入正确的ip地址")
+		os.Exit(0)
+	}
+
 	netCtl := netHandler()
+	ip, _ := netCtl.parseIP(input)
+	if ip == nil {
+		fmt.Println(">> 请输入正确的ip地址")
+		os.Exit(0)
+	}
+
+	fmt.Println(">> 开始扫描")
 	defer close(netCtl.AddChan)
 	netCtl.Wg.Add(1)
-	go netCtl.genAddress()
+	go netCtl.genAddress(ip)
 	time.Sleep(5 * time.Millisecond)
 	var now = time.Now()
 	defer func() {
