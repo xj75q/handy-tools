@@ -240,17 +240,16 @@ func switchTime(ctx context.Context, title string) {
 		splitStr := strings.Split(title, "点")
 		inputHour := getStr(splitStr[0])
 		inputHourInt, _ := strconv.Atoi(inputHour)
+
 		y, m, d := didaNow.Date()
 		currentHour, _ := strconv.Atoi(strings.Split(strings.Split(didaNow.String(), " ")[1], ":")[0])
 		if currentHour > 4 {
-			timeStr = strconv.Itoa(inputHourInt + 4)
+			timeStr = strconv.Itoa(inputHourInt - 8)
 		} else {
 			timeStr = inputHour
 		}
-		dateStr := fmt.Sprintf("%v-%v-%v %s:00:00", y, switchMonth(m.String()), d, timeStr)
-		timePattern, _ := time.Parse("2006-01-02 15:04:05", dateStr)
-
-		stream <- fmt.Sprintf("%v%s", timePattern, timeFlag)
+		dateStr := fmt.Sprintf("%v-%v-%vT%s:00:00", y, switchMonth(m.String()), d, timeStr)
+		stream <- fmt.Sprintf("%v%s", dateStr, timeFlag)
 
 	default:
 		stream <- fmt.Sprintf("%s%s", didaNow.Format("2006-01-02T15:04:05"), timeFlag)
