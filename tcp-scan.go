@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 )
@@ -69,10 +68,6 @@ func (n *netInfo) parseIP(s string) (net.IP, int) {
 
 func main() {
 	input := os.Args[1]
-	if !strings.Contains(input, ".") {
-		fmt.Println(">>请输入正确的ip地址")
-		os.Exit(0)
-	}
 
 	netCtl := netHandler()
 	ip, _ := netCtl.parseIP(input)
