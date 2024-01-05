@@ -21,6 +21,7 @@ var (
 type notescfg struct {
 	Path     string `json:"path"`
 	Filename string `json:"filename"`
+	FileType bool   `json:"filetype"`
 }
 
 func noteHandler() *notescfg {
@@ -72,7 +73,12 @@ func (c *notescfg) readCfg() (error, *notescfg) {
 }
 
 func (n *notescfg) recordNote(content string) error {
-	notefile := fmt.Sprintf("%s%s%s", n.Path, notePathFlag, n.Filename)
+	var notefile string
+	if n.FileType == true {
+		notefile = filepath.Clean(fmt.Sprintf("%s%s%s.txt", n.Path, notePathFlag, n.Filename))
+	} else {
+		notefile = filepath.Clean(fmt.Sprintf("%s%s%s", n.Path, notePathFlag, n.Filename))
+	}
 	file, err := os.OpenFile(notefile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return fmt.Errorf("打开文件失败:", err)
@@ -102,6 +108,7 @@ var (
 		Run: func(cmd *cobra.Command, args []string) {
 			path, _ := cmd.Flags().GetString("path")
 			filename, _ := cmd.Flags().GetString("filename")
+			fileType, _ := cmd.Flags().GetBool("type")
 			if path == "" || filename == "" {
 				fmt.Println(">> 请填写正确的配置信息")
 				return
@@ -114,6 +121,7 @@ var (
 
 			note.Path = path
 			note.Filename = filename
+			note.FileType = fileType
 			err, result := note.initConfig()
 			if err != nil {
 				fmt.Println(err)
@@ -145,7 +153,9 @@ var (
 func init() {
 	cfgCmd.Flags().StringP("path", "p", "", "填写笔记保存的路径")
 	cfgCmd.Flags().StringP("filename", "n", "", "填写笔记名称")
+	cfgCmd.Flags().BoolP("type", "t", true, "笔记是否需要后缀.txt")
 	recordCmd.Flags().StringP("content", "c", "", "需记录的内容")
+
 	noteCmd.AddCommand(cfgCmd)
 	noteCmd.AddCommand(recordCmd)
 }
