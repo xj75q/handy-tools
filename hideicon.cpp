@@ -36,6 +36,8 @@ bool ishide;
 int main()
 {
 	system("title HideIcon");
+
+	cout << "将鼠标放在需要隐藏的任务栏上，按alt+1 选中窗口" << endl;
 	for (;;)
 	{
 		if (HotKeyDown(add))
@@ -70,7 +72,7 @@ int main()
 					SetWindowLongPtrW(targetWindow, GWL_EXSTYLE,WS_EX_TOOLWINDOW);
 					SetWindowPos(targetWindow, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
-					cout << "该任务栏图标隐藏成功，请按任意键退出:" << endl;
+					cout << "该任务栏图标隐藏成功，按回车键退出..." << endl;
 					getchar();
 					exit(0);
 
