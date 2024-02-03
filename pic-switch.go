@@ -110,10 +110,11 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 		info := value.(os.FileInfo)
 		infoName := strings.Split(strings.ToLower(info.Name()), ".")
 		picName := strings.Join(infoName[:len(infoName)-1], "")
+		picNameLength := len([]rune(picName))
 		outlist := strings.Split(pathAndFilename, string(os.PathSeparator))
 		final := outlist[:len(outlist)-1]
 		outpath := strings.Join(final, "/") + string(os.PathSeparator)
-		if strings.Contains(picName, "!") && len(picName) > 40 {
+		if strings.Contains(picName, "!") && picNameLength > 40 {
 			content := strings.Split(picName, "!")[0]
 			outName := content[32:] + outType
 			outContent := outpath + outName
@@ -124,9 +125,9 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 			if err := cmd.Wait(); err != nil {
 				fmt.Println(err.Error())
 			}
-		} else if len(picName) > 15 && len(picName) < 25 {
+		} else if picNameLength > 15 && picNameLength < 25 {
 			outName := picName[15:] + outType
-			outContent := outpath + string(os.PathSeparator) + outName
+			outContent := outpath + outName
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
 				fmt.Println(err.Error())
@@ -135,7 +136,7 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 				fmt.Println(err.Error())
 			}
 		} else {
-			outContent := outpath + string(os.PathSeparator) + info.Name()
+			outContent := fmt.Sprintf("%s%s%s", outpath, picName, outType)
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
 				fmt.Println(err.Error())
@@ -149,6 +150,7 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 		fmt.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
 		time.Sleep(1 * time.Second)
 		os.Remove(pathAndFilename)
+
 	}
 }
 
