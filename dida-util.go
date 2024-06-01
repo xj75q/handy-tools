@@ -88,10 +88,16 @@ func (t *TimeModify) SwitchDate(ctx context.Context, title string) {
 			return
 		}
 
-	case strings.Contains(title, "月") && strings.Contains(title, "号"):
+	case strings.Contains(title, "月") && (strings.Contains(title, "号") || strings.Contains(title, "日")):
+		var day string
 		year := didaNow.Year()
 		month := getStr(strings.Split(title, "月")[0])
-		day := getStr(strings.Split(strings.Split(title, "号")[0], "月")[1])
+		if strings.Contains(title, "号") {
+			day = getStr(strings.Split(strings.Split(title, "号")[0], "月")[1])
+		} else {
+			day = getStr(strings.Split(strings.Split(title, "日")[0], "月")[1])
+		}
+
 		date := fmt.Sprintf("%v-%v-%v", year, month, day)
 		go switchTime(ctx, title)
 		select {
