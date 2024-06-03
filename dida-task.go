@@ -29,6 +29,7 @@ var (
 	now           = fmt.Sprintf("%s%s", time.Now().Add(8*pd).Format("2006-01-02T15:04:05"), ".000+0000")
 	fname         = "dida-cfg.json"
 	preSign       = "657"
+	timeOut       = 3 * time.Second
 )
 
 type userInfo struct {
@@ -164,7 +165,7 @@ func (h *htmlParams) generateReqHeader(cookie string) map[string]interface{} {
 
 func (u *userInfo) login() {
 	web := htmlHandler()
-	client := &http.Client{}
+	client := &http.Client{Timeout: timeOut}
 	sendData, _ := json.Marshal(&u)
 	var wg sync.WaitGroup
 	stream := make(chan interface{}, 1)
@@ -375,7 +376,7 @@ func (c *cfg) sendTask(title, content, startdate string) {
 		data := c.recordText(title, content, LocalCfg.ProjectId, startdate)
 
 		web := htmlHandler()
-		client := &http.Client{}
+		client := &http.Client{Timeout: timeOut}
 		sendData, _ := json.Marshal(&data)
 		req, err := http.NewRequest(web.Method, TaskApiUrl, strings.NewReader(string(sendData)))
 		if err != nil {
@@ -386,9 +387,20 @@ func (c *cfg) sendTask(title, content, startdate string) {
 			req.Header.Set(key, header.(string))
 		}
 		resp, err := client.Do(req)
+		if err != nil && strings.Contains(err.Error(), "connection refused") {
+			stream <- fmt.Errorf("%v", err)
+			return
+		}
+
+		if err != nil {
+			stream <- fmt.Errorf("%v", err)
+			return
+		}
+
 		if resp.StatusCode != http.StatusOK {
 			stream <- fmt.Errorf("resp status:%v", resp.Status)
 		}
+
 		defer resp.Body.Close()
 	}()
 
@@ -397,7 +409,7 @@ func (c *cfg) sendTask(title, content, startdate string) {
 	for {
 		select {
 		case err := <-stream:
-			fmt.Printf(">> 出错了%v\n", err)
+			fmt.Printf(">> 出错了 %v\n", err)
 			return
 
 		default:
@@ -472,6 +484,6 @@ func main() {
 		os.Exit(1)
 	}
 	//c := cfgHandler()
-	//c.recordText("15:15", "", "", "")
+	//c.recordText("明天上午10点aaaaa", "", "", "")
 
 }
