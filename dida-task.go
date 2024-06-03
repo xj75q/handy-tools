@@ -388,7 +388,7 @@ func (c *cfg) sendTask(title, content, startdate string) {
 		}
 		resp, err := client.Do(req)
 		if err != nil && strings.Contains(err.Error(), "connection refused") {
-			stream <- fmt.Errorf("%v", err)
+			stream <- fmt.Errorf("%v", "请检查网路后重试...")
 			return
 		}
 
@@ -409,7 +409,7 @@ func (c *cfg) sendTask(title, content, startdate string) {
 	for {
 		select {
 		case err := <-stream:
-			fmt.Printf(">> 出错了 %v\n", err)
+			fmt.Printf(">> 出错了：%v\n", err)
 			return
 
 		default:
