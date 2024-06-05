@@ -109,7 +109,7 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 	for pathAndFilename, value := range fInfo {
 		info := value.(os.FileInfo)
 		infoName := strings.Split(strings.ToLower(info.Name()), ".")
-		picName := strings.Join(infoName[:len(infoName)-1], "")
+		picName := strings.Join(infoName[:len(infoName)-1], ".")
 		picNameLength := len([]rune(picName))
 		outlist := strings.Split(pathAndFilename, string(os.PathSeparator))
 		final := outlist[:len(outlist)-1]
@@ -137,6 +137,7 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 			}
 		} else {
 			outContent := fmt.Sprintf("%s%s%s", outpath, picName, outType)
+			//fmt.Println(outContent)
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
 				fmt.Println(err.Error())
@@ -145,6 +146,7 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 			if err := cmd.Wait(); err != nil {
 				fmt.Println(err.Error())
 			}
+
 		}
 
 		fmt.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
