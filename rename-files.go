@@ -198,17 +198,18 @@ func (f *fieldName) useSameName(ctx *cli.Context) error {
 				} else {
 					count++
 					newfile := fmt.Sprintf("%s%s%s-%v.%s", fpath, pathMark, f.sameFileName, fmt.Sprintf("%02d", count), strings.Split(Info.Name(), ".")[1])
-
-					err := os.Rename(path, newfile)
-					if err != nil {
-						return err
-					}
-					fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
+					//todo 之后需进一步优化
+					defer func() {
+						err := os.Rename(path, newfile)
+						if err != nil {
+							fmt.Errorf("")
+						}
+						fmt.Printf("重命名为 %s 成功，请查看...\n", newfile)
+					}()
 				}
-
 			}
 		default:
-			f.sortLayer(ctx, layerList)
+			f.sortLayer(ctx, layerList) //没关系
 			return nil
 		}
 	}
@@ -312,21 +313,17 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 				info := value.(os.FileInfo)
 				finfo := strings.Split(info.Name(), ".")
 				if f.subStr == "" || !strings.Contains(finfo[0], f.subStr) {
-					return
+					continue
 				}
-
 				pathInfo := strings.Split(path, pathMark)
 				fpath := strings.Join(pathInfo[:len(pathInfo)-1], pathMark)
-
 				firstIndex := strings.Index(finfo[0], f.subStr)
 				lastIndex := strings.LastIndex(finfo[0], f.subStr)
 				switch {
 				case f.subLoc == "all":
 					newName = strings.ReplaceAll(finfo[0], f.subStr, "")
 					newfile := fmt.Sprintf("%s%s%s.%s", fpath, pathMark, newName, finfo[1])
-
 					//fmt.Println("*****", path, newfile)
-
 					err := os.Rename(path, newfile)
 					if err != nil {
 						fmt.Println(err.Error())
@@ -337,9 +334,7 @@ func (f *fieldName) subFileName(ctx *cli.Context) {
 					if firstIndex == 0 {
 						newName = strings.TrimLeft(finfo[0], f.subStr)
 						newfile := fmt.Sprintf("%s%s%s.%s", fpath, pathMark, newName, finfo[1])
-
 						//fmt.Println("*****", path, newfile)
-
 						err := os.Rename(path, newfile)
 						if err != nil {
 							fmt.Println(err.Error())
@@ -457,7 +452,7 @@ var (
 	handler = NewHandler()
 	authors = []*cli.Author{
 		{
-			Name: "developed by qxz",
+			Name: "coding by qxz",
 		},
 	}
 	cliFlags = []cli.Flag{
@@ -735,7 +730,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "【文件批量重命名】"
 	app.Usage = "秒级文件批量重命名"
-	app.UsageText = "示例：renamef -i 文件夹路径 altersn -s 2"
+	app.UsageText = "示例：frename -i 文件夹路径 altersn -s 2"
 	app.Flags = cliFlags
 	app.Commands = cliCommands
 	app.Authors = authors
