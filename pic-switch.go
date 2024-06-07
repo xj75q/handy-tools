@@ -126,7 +126,7 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 				fmt.Println(err.Error())
 			}
 		} else if picNameLength > 15 && picNameLength < 25 {
-			outName := picName[15:] + outType
+			outName := string([]rune(picName)[:15]) + outType
 			outContent := outpath + outName
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
@@ -142,17 +142,13 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 			if err := cmd.Start(); err != nil {
 				fmt.Println(err.Error())
 			}
-
 			if err := cmd.Wait(); err != nil {
 				fmt.Println(err.Error())
 			}
-
 		}
-
 		fmt.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
 		time.Sleep(1 * time.Second)
 		os.Remove(pathAndFilename)
-
 	}
 }
 
