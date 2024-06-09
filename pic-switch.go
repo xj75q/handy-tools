@@ -38,13 +38,16 @@ func (f *fileInfo) judgeFileType(flag string) bool {
 	case "webp":
 		return true
 
-	case "png":
+	case "png", "bmg", "gif":
 		return true
 
-	case "jpeg":
+	case "jpeg", "jpe", "jfi":
 		return true
 
-	case "bmp":
+	case "avif", "mng", "jng":
+		return true
+
+	case "tga", "wmf", "dng", "pnm", "pgm", "ppm":
 		return true
 
 	default:
