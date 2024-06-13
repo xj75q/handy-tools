@@ -157,6 +157,7 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 
 func main() {
 	ph := handlerPic()
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.StringVar(&ph.fPath, "i", "", "请输入路径")
 	flag.Parse()
 	if ph.fPath == "" {

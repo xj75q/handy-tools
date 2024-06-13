@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -59,6 +60,7 @@ func (f *fileinfo) readBlock() {
 
 func main() {
 	handler := newHandler()
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	flag.StringVar(&handler.fpath, "i", "", "请输入文件")
 	flag.IntVar(&handler.fbyte, "b", 1024, "设置每次读取的字节数，默认1024是以M为单位")
 	flag.Parse()

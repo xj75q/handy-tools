@@ -357,13 +357,13 @@ var (
 )
 
 func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	rootCmd.Flags().StringP("input", "i", "", "文件路径(必填)")
 	rootCmd.Flags().StringP("output", "o", "", "文件保存路径（选填）")
 	rootCmd.Flags().StringP("type", "t", "video", "默认视频，音频请使用audio参数")
 	rootCmd.Flags().Int64P("volume", "v", 0, "声音调节,声音调整分[正负数调整分贝]")
 	rootCmd.Flags().Float64P("speed", "s", 0, "速度调节，倍率调整范围为[0.5, 2.0]")
 	rootCmd.MarkFlagRequired("input")
-
 }
 
 func main() {
