@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/avast/retry-go"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,7 +30,9 @@ var (
 	now           = fmt.Sprintf("%s%s", time.Now().Add(8*pd).Format("2006-01-02T15:04:05"), ".000+0000")
 	fname         = "dida-cfg.json"
 	preSign       = "657"
-	timeOut       = 3 * time.Second
+	timeOut       = 5 * time.Second
+	retryTimeout  = 2 * time.Second
+	retryNum      = uint(3)
 )
 
 type userInfo struct {
@@ -386,22 +389,32 @@ func (c *cfg) sendTask(title, content, startdate string) {
 		for key, header := range headers {
 			req.Header.Set(key, header.(string))
 		}
-		resp, err := client.Do(req)
-		if err != nil && strings.Contains(err.Error(), "connection refused") {
-			stream <- fmt.Errorf("%v", "请检查网路后重试...")
+
+		retryErr := retry.Do(
+			func() error {
+				resp, err := client.Do(req)
+				if err != nil && strings.Contains(err.Error(), "connection refused") {
+					return fmt.Errorf("%v", "请检查网路后重试...")
+				}
+
+				if err != nil {
+					return fmt.Errorf("%v", err)
+				}
+				if resp.StatusCode != http.StatusOK {
+					return fmt.Errorf("resp status:%v", resp.Status)
+				}
+				defer resp.Body.Close()
+				return nil
+			},
+			retry.Delay(retryTimeout),
+			retry.Attempts(retryNum),
+			retry.DelayType(retry.FixedDelay),
+			retry.LastErrorOnly(true),
+		)
+		if retryErr != nil {
+			stream <- retryErr
 			return
 		}
-
-		if err != nil {
-			stream <- fmt.Errorf("%v", err)
-			return
-		}
-
-		if resp.StatusCode != http.StatusOK {
-			stream <- fmt.Errorf("resp status:%v", resp.Status)
-		}
-
-		defer resp.Body.Close()
 	}()
 
 	wg.Wait()
