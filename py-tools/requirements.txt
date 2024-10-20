@@ -1,0 +1,15 @@
+certifi==2023.7.22
+charset-normalizer==3.2.0
+docx==0.2.4
+idna==3.4
+lxml==4.9.3
+Pillow==10.0.0
+PyPDF2==3.0.1
+python-docx==0.8.11
+python-pptx==0.6.21
+requests==2.31.0
+urllib3==2.0.4
+XlsxWriter==3.1.2
+tzlocal==4.2
+pyperclip==1.8.2
+
