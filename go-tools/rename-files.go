@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/urfave/cli/v2"
+	"go-tools/fileCommon"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -43,18 +44,6 @@ func NewHandler() *fieldName {
 	}
 }
 
-func IsDir(path string) bool {
-	s, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return s.IsDir()
-}
-
-func IsFile(path string) bool {
-	return !IsDir(path)
-}
-
 func (f *fieldName) inputFileInfo(ctx *cli.Context) error {
 	err := filepath.Walk(f.inputPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -66,7 +55,7 @@ func (f *fieldName) inputFileInfo(ctx *cli.Context) error {
 		if info.IsDir() && fpath == outputpath {
 			return nil
 		}
-		if IsFile(path) {
+		if fileCommon.IsFile(path) {
 			fileInfo := make(map[string]interface{})
 			fileInfo[path] = info
 			go func(ctx *cli.Context) {

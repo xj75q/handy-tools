@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"go-tools/fileCommon"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,7 +36,7 @@ func handlerPic() *fileInfo {
 
 func (f *fileInfo) judgeFileType(flag string) bool {
 	switch flag {
-	case "webp":
+	case "webp", "awebp":
 		return true
 
 	case "png", "bmg", "gif":
@@ -55,18 +56,6 @@ func (f *fileInfo) judgeFileType(flag string) bool {
 	}
 }
 
-func isDir(path string) bool {
-	s, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return s.IsDir()
-}
-
-func isFile(path string) bool {
-	return !isDir(path)
-}
-
 func (f *fileInfo) executeSwitch() {
 
 	err := filepath.Walk(f.fPath, func(pathAndFilename string, info os.FileInfo, err error) error {
@@ -76,7 +65,7 @@ func (f *fileInfo) executeSwitch() {
 		infoName := strings.Split(strings.ToLower(info.Name()), ".")
 		flag := infoName[len(infoName)-1]
 		isPicType := f.judgeFileType(flag)
-		if isFile(pathAndFilename) && isPicType {
+		if fileCommon.IsFile(pathAndFilename) && isPicType {
 			var fInfo = make(map[string]interface{})
 			fInfo[pathAndFilename] = info
 			f.wg.Add(1)
@@ -107,7 +96,6 @@ func (f *fileInfo) handleEventStream() {
 }
 
 func (f *fileInfo) convertPic(picStream interface{}) {
-
 	fInfo := picStream.(map[string]interface{})
 	for pathAndFilename, value := range fInfo {
 		info := value.(os.FileInfo)
@@ -129,8 +117,10 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 				fmt.Println(err.Error())
 			}
 		} else if picNameLength > 15 && picNameLength < 25 {
+			//todo 名字去重
 			outName := string([]rune(picName)[:15]) + outType
 			outContent := outpath + outName
+			fmt.Println(outContent)
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
 				fmt.Println(err.Error())
@@ -154,6 +144,31 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 		os.Remove(pathAndFilename)
 	}
 }
+
+type filterSameName struct{}
+
+func (f filterSameName) unique(params []string) []string {
+	names := make([]string, 0)
+	tmpName := make(map[string]byte)
+	for _, v := range params {
+		if _, ok := tmpName[v]; !ok {
+			tmpName[v] = 1
+			names = append(names, v)
+		}
+	}
+	return names
+}
+
+func (f filterSameName) fileName(names []string) []string {
+	length := len(names)
+	if length > 1 {
+		return names
+	}
+
+	return nil
+}
+
+//func
 
 func main() {
 	ph := handlerPic()

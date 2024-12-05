@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"go-tools/fileCommon"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -162,18 +163,6 @@ func inputHandler() *param {
 	return &param{}
 }
 
-func (p *param) isDir(path string) bool {
-	s, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return s.IsDir()
-}
-
-func (p *param) isFile(path string) bool {
-	return !p.isDir(path)
-}
-
 func (p *param) judgeVideoType(flag string) bool {
 	switch flag {
 	case "mp4":
@@ -219,7 +208,7 @@ func (p *param) switchVideo() error {
 		switch p.ftype {
 		case "video":
 			isVideoType := p.judgeVideoType(flag)
-			if p.isFile(pathAndFilename) && isVideoType {
+			if fileCommon.IsFile(pathAndFilename) && isVideoType {
 				fInfo := make(map[string]interface{})
 				fInfo[pathAndFilename] = p
 				go func() {
@@ -229,7 +218,7 @@ func (p *param) switchVideo() error {
 			}
 		case "audio":
 			isAuidoType := p.judgeAudioType(flag)
-			if p.isFile(pathAndFilename) && isAuidoType {
+			if fileCommon.IsFile(pathAndFilename) && isAuidoType {
 				fInfo := make(map[string]interface{})
 				fInfo[pathAndFilename] = p
 				go func() {
