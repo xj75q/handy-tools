@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -55,7 +56,7 @@ func (f *ConfigFile) isFileExist(fpath string) (error, string) {
 		if err != nil {
 			return fmt.Errorf("创建并写入文件失败，请检查目录权限"), ""
 		} else {
-			fmt.Println(">> flomo配置文件初始化成功，请填入你的API")
+			log.Println(">> flomo配置文件初始化成功，请填入你的API")
 			return nil, "success"
 		}
 	} else {
@@ -127,7 +128,7 @@ func (h *HtmlParams) SendPost(url, data string) error {
 	if code == "-1" {
 		return fmt.Errorf("请使用flomo会员，才能发送数据...")
 	} else {
-		fmt.Printf("已发送到flomo的数据为：%v", data)
+		log.Printf("已发送到flomo的数据为：%v", data)
 		return nil
 	}
 	return nil
@@ -158,13 +159,11 @@ func main() {
 			return nil
 		}
 		err = htmlHandler.SendPost(url, data)
-
 		return err
 	}
 
 	sort.Sort(cli.FlagsByName(app.Flags))
-	err := app.Run(os.Args)
-	if err != nil {
-		fmt.Printf(">> %v\n", err)
+	if err := app.Run(os.Args); err != nil {
+		log.Printf(">> %v\n", err)
 	}
 }

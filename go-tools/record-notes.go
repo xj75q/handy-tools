@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,12 +111,12 @@ var (
 			filename, _ := cmd.Flags().GetString("filename")
 			fileType, _ := cmd.Flags().GetBool("type")
 			if path == "" || filename == "" {
-				fmt.Println(">> 请填写正确的配置信息")
+				log.Println(">> 请填写正确的配置信息")
 				return
 			}
 
 			if !strings.Contains(path, notePathFlag) {
-				fmt.Println("配置信息路径不正确，请重新填写...")
+				log.Println("配置信息路径不正确，请重新填写...")
 				return
 			}
 
@@ -124,10 +125,10 @@ var (
 			note.FileType = fileType
 			err, result := note.initConfig()
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return
 			}
-			fmt.Println(result)
+			log.Println(result)
 		},
 	}
 
@@ -162,7 +163,7 @@ func init() {
 
 func main() {
 	if err := noteCmd.Execute(); err != nil {
-		fmt.Printf(">> 出错了：%s\n", err)
+		log.Printf(">> 出错了：%s\n", err)
 		os.Exit(1)
 	}
 }

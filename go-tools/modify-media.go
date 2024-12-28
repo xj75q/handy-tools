@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"go-tools/fileCommon"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -140,10 +141,10 @@ func (b *batcher) batchProcess(items []interface{}) {
 
 func (b *batcher) StartSwitch() {
 	now := time.Now()
-	fmt.Println(">> 正在转换，请稍后...")
+	log.Println(">> 正在转换，请稍后...")
 	defer func() {
 		cost := time.Since(now).String()
-		fmt.Printf("总耗时为：%s\n", cost)
+		log.Printf("总耗时为：%s\n", cost)
 	}()
 	defer b.stop()
 	for i := 1; i <= b.option.Workers; i++ {
@@ -195,7 +196,7 @@ func (p *param) judgeAudioType(flag string) bool {
 
 func (p *param) switchVideo() error {
 	if p.speed != 0 && p.ftype == "video" {
-		fmt.Println(">> 速度调节只可用于音频文件，请输入音频类型 audio ,之后重新运行...")
+		log.Println(">> 速度调节只可用于音频文件，请输入音频类型 audio ,之后重新运行...")
 		os.Exit(0)
 	}
 	batch := batchHandler()
@@ -289,10 +290,10 @@ func (p *param) switchFile(fInfo interface{}) {
 		stdout, err := cmd.StdoutPipe()
 		cmd.Stderr = cmd.Stdout
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 		if err = cmd.Start(); err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 
 		for {
@@ -300,7 +301,7 @@ func (p *param) switchFile(fInfo interface{}) {
 			_, err := stdout.Read(tmp)
 			data := string(tmp)
 			if strings.Contains(data, "muxing overhead") {
-				fmt.Printf(">> 将 %s 目录下的文件转换成 %s 成功...\n", pathInfo, fName)
+				log.Printf(">> 将 %s 目录下的文件转换成 %s 成功...\n", pathInfo, fName)
 			}
 			if err != nil {
 				break
@@ -308,7 +309,7 @@ func (p *param) switchFile(fInfo interface{}) {
 		}
 
 		if err := cmd.Wait(); err != nil {
-			fmt.Printf(">> exec err:%v\n", err.Error())
+			log.Printf(">> exec err:%v\n", err.Error())
 		}
 
 	}
@@ -333,7 +334,7 @@ var (
 			volume, _ := cmd.Flags().GetInt64("volume")
 			speed, _ := cmd.Flags().GetFloat64("speed")
 			if fileType == "audio" && (volume == 0 && speed == 0) {
-				fmt.Println(">> 请填入转换音频所使用参数...")
+				log.Println(">> 请填入转换音频所使用参数...")
 				os.Exit(0)
 			}
 
@@ -357,7 +358,7 @@ func init() {
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("err of %s", err)
+		log.Printf("err of %s", err)
 		os.Exit(1)
 	}
 }

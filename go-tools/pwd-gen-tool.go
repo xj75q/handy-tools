@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -41,9 +42,9 @@ func (fd *folder) CreateFile(InputPath string) string {
 	if !isExists {
 		err := os.Mkdir(passwordPath, 0777)
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 		}
-		fmt.Println("===存放密码文件夹创建成功...")
+		log.Println("===存放密码文件夹创建成功...")
 	}
 	return passwordPath
 }
@@ -65,18 +66,18 @@ func genNewStr(strSet string, n int, sc chan string) {
 
 func execGen(start, length int, fs *os.File) {
 	if start > length {
-		fmt.Println("密码起始位不得大于密码长度")
+		log.Println("密码起始位不得大于密码长度")
 		return
 	}
 	for i := start; i <= length; i++ {
-		fmt.Println("i:", i)
+		log.Println("i:", i)
 		sc := make(chan string)
 		go genNewStr(string(strSet), i, sc)
 		for x := range sc {
 			atomic.AddUint32(&imarkpwd, 1)
 			fs.WriteString(x)
 			fs.WriteString(string("\n"))
-			fmt.Println("生成新的pwd为:", x)
+			log.Println("生成新的pwd为:", x)
 		}
 	}
 }
@@ -101,7 +102,7 @@ func (p *Param) run() error {
 		fd := folderHandler()
 		pwd_dir := fd.CreateFile(p.SavePath)
 		filename := pwd_dir + string(os.PathSeparator) + fileName
-		fmt.Println(filename)
+		log.Println(filename)
 		fs, e := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
 		if e != nil {
 			return e
@@ -112,7 +113,7 @@ func (p *Param) run() error {
 
 	imarkFinal := atomic.LoadUint32(&imarkpwd)
 	since := int(time.Since(starttime).Seconds())
-	fmt.Println("完成消耗时间:", since, "s", "生成:", imarkFinal, "个密码")
+	log.Println("完成消耗时间:", since, "s", "生成:", imarkFinal, "个密码")
 	time.Sleep(10)
 	return nil
 }
@@ -135,6 +136,6 @@ func main() {
 	flag.Parse()
 	err := inputParam.run()
 	if err != nil {
-		fmt.Printf(">> err: %v", err)
+		log.Printf(">> err: %v", err)
 	}
 }

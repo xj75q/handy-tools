@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -216,10 +217,10 @@ loop:
 		case result := <-stream:
 			switch result.(type) {
 			case error:
-				fmt.Printf(">> 出错了：%v\n", result)
+				log.Printf(">> 出错了：%v\n", result)
 				break loop
 			case string:
-				fmt.Println(strings.Trim(result.(string), "\n"))
+				log.Println(strings.Trim(result.(string), "\n"))
 				break loop
 			}
 
@@ -310,10 +311,10 @@ loop:
 		case result := <-stream:
 			switch result.(type) {
 			case error:
-				fmt.Printf(">> 出错了：%v\n", result)
+				log.Printf(">> 出错了：%v\n", result)
 				break loop
 			case string:
-				fmt.Println(strings.Trim(result.(string), "\n"))
+				log.Println(strings.Trim(result.(string), "\n"))
 				break loop
 			}
 		}
@@ -338,7 +339,7 @@ func (c *cfg) recordText(title, content, projectId, startdate string) map[string
 		"trigger": "TRIGGER:PT0S",
 		"id":      remindid,
 	})
-	//fmt.Println(">>", startDate)
+	//log.Println(">>", startDate)
 	record["createdTime"] = now
 	record["modifiedTime"] = now
 	record["title"] = title
@@ -421,11 +422,11 @@ func (c *cfg) sendTask(title, content, startdate string) {
 	for {
 		select {
 		case err := <-stream:
-			fmt.Printf(">> 出错了：%v\n", err)
+			log.Printf(">> 出错了：%v\n", err)
 			return
 
 		default:
-			fmt.Println(">> 记录任务完成 ...")
+			log.Println(">> 记录任务完成 ...")
 			return
 		}
 	}
@@ -492,7 +493,7 @@ func init() {
 
 func main() {
 	if err := didaCmd.Execute(); err != nil {
-		fmt.Printf("err of %s", err)
+		log.Printf("err of %s", err)
 		os.Exit(1)
 	}
 	//c := cfgHandler()

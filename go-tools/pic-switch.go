@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"go-tools/fileCommon"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -78,7 +79,7 @@ func (f *fileInfo) executeSwitch() {
 		return nil
 	})
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 	}
 
 }
@@ -111,35 +112,35 @@ func (f *fileInfo) convertPic(picStream interface{}) {
 			outContent := outpath + outName
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 			if err := cmd.Wait(); err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 		} else if picNameLength > 15 && picNameLength < 25 {
 			//todo 名字去重
 			outName := string([]rune(picName)[:15]) + outType
 			outContent := outpath + outName
-			fmt.Println(outContent)
+			log.Println(outContent)
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 			if err := cmd.Wait(); err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 		} else {
 			outContent := fmt.Sprintf("%s%s%s", outpath, picName, outType)
-			//fmt.Println(outContent)
+			//log.Println(outContent)
 			cmd := exec.Command(commandName, pathAndFilename, outContent)
 			if err := cmd.Start(); err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 			if err := cmd.Wait(); err != nil {
-				fmt.Println(err.Error())
+				log.Println(err.Error())
 			}
 		}
-		fmt.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
+		log.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
 		time.Sleep(1 * time.Second)
 		os.Remove(pathAndFilename)
 	}
@@ -176,7 +177,7 @@ func main() {
 	flag.StringVar(&ph.fPath, "i", "", "请输入路径")
 	flag.Parse()
 	if ph.fPath == "" {
-		fmt.Println("文件路径不能为空，请再次输入！！！")
+		log.Println("文件路径不能为空，请再次输入！！！")
 		os.Exit(0)
 	} else if ph.fPath == "./" {
 		ph.fPath, _ = os.Getwd()
@@ -184,7 +185,7 @@ func main() {
 	now := time.Now()
 	defer func() {
 		cost := time.Since(now).String()
-		fmt.Printf("总耗时为：%s\n", cost)
+		log.Printf("总耗时为：%s\n", cost)
 	}()
 	defer close(ph.eventChan)
 	ph.executeSwitch()

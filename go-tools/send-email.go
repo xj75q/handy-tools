@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 	"io/ioutil"
+	"log"
 	"net/smtp"
 	"os"
 	"path/filepath"
@@ -78,7 +79,7 @@ func (f *Cfg) CreateConfig(fpath string) (error, string) {
 		if err != nil {
 			return fmt.Errorf("创建并写入文件失败，请检"), ""
 		} else {
-			fmt.Println(">> 邮箱配置文件初始化成功")
+			log.Println(">> 邮箱配置文件初始化成功")
 			return nil, "success"
 		}
 
@@ -167,7 +168,7 @@ func (m *Email) SendEmail() error {
 	if err := mail.Send(addr, smtp.PlainAuth("", cfginfo.FromMail, cfginfo.Pwd, cfginfo.Smtp)); err != nil {
 		return fmt.Errorf("发送邮件出错:%v", err)
 	}
-	fmt.Println("send success...")
+	log.Println("send success...")
 	return nil
 }
 
@@ -250,6 +251,6 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Printf(">> %v\n", err)
+		log.Printf(">> %v\n", err)
 	}
 }

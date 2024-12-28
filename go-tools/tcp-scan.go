@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"runtime"
@@ -43,7 +44,7 @@ func (n *netInfo) getPort() {
 				continue
 			}
 			conn.Close()
-			fmt.Println("开放端口为:", address)
+			log.Println("开放端口为:", address)
 		default:
 			return
 		}
@@ -72,11 +73,11 @@ func main() {
 	netCtl := netHandler()
 	ip, _ := netCtl.parseIP(input)
 	if ip == nil {
-		fmt.Println(">> 请输入正确的ip地址")
+		log.Println(">> 请输入正确的ip地址")
 		os.Exit(0)
 	}
 
-	fmt.Println(">> 开始扫描")
+	log.Println(">> 开始扫描")
 	defer close(netCtl.AddChan)
 	netCtl.Wg.Add(1)
 	go netCtl.genAddress(ip)
@@ -84,7 +85,7 @@ func main() {
 	var now = time.Now()
 	defer func() {
 		cost := time.Since(now)
-		fmt.Printf(">> 总耗时为：%v\n", cost)
+		log.Printf(">> 总耗时为：%v\n", cost)
 	}()
 	for i := 1; i < netCtl.Workers; i++ {
 		netCtl.Wg.Add(1)
