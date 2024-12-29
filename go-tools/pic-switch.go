@@ -18,7 +18,6 @@ import (
 
 var (
 	commandName = "convert"
-	outType     = ".jpg"
 	outPath     string
 	picWorkers  = runtime.NumCPU()
 )
@@ -26,6 +25,7 @@ var (
 type fileInfo struct {
 	input     string
 	output    string
+	ptype     string
 	wg        *sync.WaitGroup
 	eventChan chan interface{}
 	exitChan  chan bool
@@ -47,7 +47,7 @@ func (f *fileInfo) judgeFileType(flag string) bool {
 	case ".png", ".bmg", ".gif":
 		return true
 
-	case ".jpeg", ".jpe", ".jfi":
+	case ".jpg", ".jpeg", ".jpe", ".jfi":
 		return true
 
 	case ".avif", ".mng", ".jng":
@@ -101,11 +101,16 @@ func (f *fileInfo) handleEventStream() {
 }
 
 func (f *fileInfo) convertPic(picStream interface{}) error {
+	outType := fmt.Sprintf(".%s", f.ptype)
 	fInfo := picStream.(map[string]interface{})
 	for pathAndFilename, value := range fInfo {
 		info := value.(os.FileInfo)
 		picName := fileCommon.GetFileName(info.Name())
+		picType := fileCommon.GetFileExt(info.Name())
 		input := fileCommon.GetFilePath(pathAndFilename)
+		if picType == fmt.Sprintf(".%s", f.ptype) {
+			continue
+		}
 		picNameLength := len([]rune(picName))
 		if f.output == "./" {
 			outPath = fmt.Sprintf("%s%s", input, string(os.PathSeparator))
@@ -142,8 +147,8 @@ func (f *fileInfo) convertPic(picStream interface{}) error {
 				return err
 			}
 		}
-		log.Printf("转换完成，源文件 [%s] 将被删除……\n", info.Name())
-		//time.Sleep(100 * time.Millisecond) //为了方便看到过程，实际可以删除
+
+		log.Printf("转换成 [%s] 格式完成，源文件 [%s] 将被删除……\n", f.ptype, info.Name())
 		os.Remove(pathAndFilename)
 	}
 	return nil
@@ -179,19 +184,29 @@ func (f *fileInfo) outPutOperate() (error, string) {
 func main() {
 	ph := handlerPic()
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	flag.StringVar(&ph.input, "i", "", "请输入路径")
-	flag.StringVar(&ph.output, "o", "./", "请输入路径")
+	flag.StringVar(&ph.input, "i", "./", "请输入路径")
+	flag.StringVar(&ph.output, "o", "./", "转换后的保存路径，默认在当前路径下")
+	flag.StringVar(&ph.ptype, "t", "jpg", "请输入要转换为哪种图片格式")
 	flag.Parse()
-	if ph.input == "" {
-		log.Println("文件路径不能为空，请再次输入！！！")
-		os.Exit(1)
-	} else if ph.input == "./" {
+	if ph.input == "./" {
 		ph.input, _ = os.Getwd()
 	}
+	outType := fmt.Sprintf(".%s", ph.ptype)
+	if !ph.judgeFileType(outType) {
+		log.Fatal("请输入正确图片格式...")
+		os.Exit(1)
+	}
+
 	now := time.Now()
 	defer func() {
-		cost := time.Since(now).String()
-		log.Printf("总耗时为：%s\n", cost)
+		cost := time.Since(now)
+		costMicro := cost.Microseconds()
+		costStr := cost.String()
+		if strings.Contains(costStr, "µs") || costMicro < 30000 {
+			log.Println("此文件夹下没有图片或者都已是目标格式，可查看后继续操作!")
+		} else {
+			log.Printf("转换完成，总耗时为：%s\n", cost)
+		}
 	}()
 	defer close(ph.eventChan)
 	if err := ph.handleFolder(); err != nil {
