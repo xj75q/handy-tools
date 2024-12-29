@@ -205,7 +205,7 @@ func main() {
 		if strings.Contains(costStr, "µs") || costMicro < 30000 {
 			log.Println("此文件夹下没有图片或者都已是目标格式，可查看后继续操作!")
 		} else {
-			log.Printf("转换完成，总耗时为：%s\n", cost)
+			log.Printf("转换完成，总耗时为：%s\n", costStr)
 		}
 	}()
 	defer close(ph.eventChan)
