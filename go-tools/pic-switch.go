@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -121,20 +120,26 @@ func (f *fileInfo) convertPic(picStream interface{}) error {
 			}
 			outPath = fmt.Sprintf("%s%s", tmpOut, string(os.PathSeparator))
 		}
+		rand.Seed(time.Now().UnixNano())
 		if strings.Contains(picName, "!") && picNameLength > 40 {
+			var newName string
 			content := strings.Split(picName, "!")[0]
-			newName := content[32:]
-			outName := fmt.Sprintf("%s%s", newName, outType)
-			outFile := fmt.Sprintf("%s%s", outPath, outName)
+			if len(content) > 35 {
+				newName = content[32:]
+			} else {
+				tmpName := content[28:]
+				randomNum := rand.Intn(90) + 10 // 生成一个2位随机数
+				newName = fmt.Sprintf("%s%d", tmpName, randomNum)
+			}
+			outFile := fmt.Sprintf("%s%s%s", outPath, newName, outType)
 			//log.Println(outFile)
 			if err := f.convertCmd(pathAndFilename, outFile); err != nil {
 				return err
 			}
 		} else if picNameLength > 15 && picNameLength < 25 {
-			rand.Seed(time.Now().UnixNano())
 			randomNum := rand.Intn(900) + 100 // 生成一个3位随机数
 			newName := string([]rune(picName)[:12])
-			outName := fmt.Sprintf("%s%s%s", newName, strconv.Itoa(randomNum), outType)
+			outName := fmt.Sprintf("%s%d%s", newName, randomNum, outType)
 			outFile := fmt.Sprintf("%s%s", outPath, outName)
 			//log.Println(newName, outFile)
 			if err := f.convertCmd(pathAndFilename, outFile); err != nil {
