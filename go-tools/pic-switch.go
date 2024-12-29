@@ -184,11 +184,15 @@ func (f *fileInfo) outPutOperate() (error, string) {
 func main() {
 	ph := handlerPic()
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	flag.StringVar(&ph.input, "i", "./", "请输入路径")
+	flag.StringVar(&ph.input, "i", "", "请输入要转换的文件路径")
 	flag.StringVar(&ph.output, "o", "./", "转换后的保存路径，默认在当前路径下")
 	flag.StringVar(&ph.ptype, "t", "jpg", "请输入要转换为哪种图片格式")
 	flag.Parse()
-	if ph.input == "./" {
+	//防止在任意目录下操作，需输入路径
+	if ph.input == "" {
+		log.Println("文件路径不能为空，如需在当前目录下，可输入'-i ./'，请继续操作")
+		os.Exit(1)
+	} else if ph.input == "./" {
 		ph.input, _ = os.Getwd()
 	}
 	outType := fmt.Sprintf(".%s", ph.ptype)
@@ -202,7 +206,7 @@ func main() {
 		cost := time.Since(now)
 		costMicro := cost.Microseconds()
 		costStr := cost.String()
-		if strings.Contains(costStr, "µs") || costMicro < 30000 {
+		if costMicro < 30000 {
 			log.Println("此文件夹下没有图片或者都已是目标格式，可查看后继续操作!")
 		} else {
 			log.Printf("转换完成，总耗时为：%s\n", costStr)
