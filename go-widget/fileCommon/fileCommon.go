@@ -25,7 +25,7 @@ func GetFileExt(param string) string {
 	return path.Ext(param)
 }
 
-func GetFileName(param string) (fileName string) {
+func GetfileName(param string) (fileName string) {
 	ext := GetFileExt(param)
 	if strings.Contains(param, pathMark) {
 		tmpFile := strings.Split(param, pathMark)
@@ -37,7 +37,7 @@ func GetFileName(param string) (fileName string) {
 	}
 }
 
-func GetFilePath(param string) string {
+func GetfilePath(param string) string {
 	tmpFile := strings.Split(filepath.Clean(param), pathMark)
 	fpath := strings.Join(tmpFile[:len(tmpFile)-1], pathMark)
 	return fpath
