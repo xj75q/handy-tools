@@ -42,6 +42,7 @@ var (
 )
 
 type (
+	//如果需要对外提供，将小写改为大写
 	colorLog interface {
 		Debugf(format string, args ...interface{})
 		Infof(format string, args ...interface{})

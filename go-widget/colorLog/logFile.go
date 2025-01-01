@@ -90,9 +90,14 @@ func (s *logStore) createLogFile(f *logParam) (err error) {
 	if err != nil {
 		return err
 	}
+	/*todo 这里需优化，
+	执行程序时检测路径下的文件，
+	将超过最大时间后进行压缩并放入新文件夹
+	在bysize的时候，旧文件重命名并进行新文件创建
+	*/
 	now := time.Now()
 	originFile := fmt.Sprintf("%s%s%s", filepath.Clean(f.filePath), pathFlag, f.fileName)
-	newName := fmt.Sprintf("%s_%02d%02d_old.log", originFile, now.Month(), now.Day()) //todo 这里需优化，超过最大时间后进行压缩
+	newName := fmt.Sprintf("%s_%02d%02d_old.log", originFile, now.Month(), now.Day())
 	_, err = os.Stat(logFile)
 	if !(err != nil && os.IsNotExist(err)) && !s.isToday(now) {
 		if err = os.Rename(logFile, newName); err != nil {
