@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var pathMark = string(os.PathSeparator)
+var PathMark = string(os.PathSeparator)
 
 func IsFile(path string) bool {
 	return !checkDir(path)
@@ -27,8 +27,8 @@ func GetFileExt(param string) string {
 
 func GetFileName(param string) (fileName string) {
 	ext := GetFileExt(param)
-	if strings.Contains(param, pathMark) {
-		tmpFile := strings.Split(param, pathMark)
+	if strings.Contains(param, PathMark) {
+		tmpFile := strings.Split(param, PathMark)
 		fileName = strings.TrimSuffix(tmpFile[len(tmpFile)-1:][0], ext)
 		return fileName
 	} else {
@@ -38,8 +38,8 @@ func GetFileName(param string) (fileName string) {
 }
 
 func GetFilePath(param string) string {
-	tmpFile := strings.Split(filepath.Clean(param), pathMark)
-	fpath := strings.Join(tmpFile[:len(tmpFile)-1], pathMark)
+	tmpFile := strings.Split(filepath.Clean(param), PathMark)
+	fpath := strings.Join(tmpFile[:len(tmpFile)-1], PathMark)
 	return fpath
 }
 

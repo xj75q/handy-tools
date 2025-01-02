@@ -15,20 +15,22 @@ import (
 )
 
 var (
-	Conf        ConfigFile
-	filePath, _ = os.Getwd()
+	Conf       ConfigFile
+	cfgPath, _ = os.Getwd()
 )
 
-type HtmlParams struct {
-	Data   string
-	Method string
-}
+type (
+	HtmlParams struct {
+		Data   string
+		Method string
+	}
 
-type ConfigFile struct {
-	FileName string
-	CfgPath  string
-	FlomoApi string
-}
+	ConfigFile struct {
+		FileName string
+		CfgPath  string
+		FlomoApi string
+	}
+)
 
 func NewHtmlHandler() *HtmlParams {
 	return &HtmlParams{
@@ -39,7 +41,7 @@ func NewHtmlHandler() *HtmlParams {
 func NewFileHandler() *ConfigFile {
 	return &ConfigFile{
 		FileName: "flomoCfg.json",
-		CfgPath:  filePath,
+		CfgPath:  cfgPath,
 	}
 }
 
@@ -52,7 +54,7 @@ func (f *ConfigFile) isFileExist(fpath string) (error, string) {
 	if err != nil && os.IsNotExist(err) {
 		createFile, _ := os.Create(file)
 		jsonStr := `{"flomoApi":""}`
-		_, err := createFile.WriteString(jsonStr)
+		_, err = createFile.WriteString(jsonStr)
 		if err != nil {
 			return fmt.Errorf("创建并写入文件失败，请检查目录权限"), ""
 		} else {
@@ -151,7 +153,7 @@ func main() {
 		data := c.String("input")
 		fileHandler := NewFileHandler()
 		htmlHandler := NewHtmlHandler()
-		err, url := fileHandler.isFileExist(filePath)
+		err, url := fileHandler.isFileExist(cfgPath)
 		if err != nil {
 			return err
 		}

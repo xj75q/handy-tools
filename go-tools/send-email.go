@@ -18,7 +18,7 @@ import (
 
 var (
 	exePath, _       = os.Executable()
-	file_path        = filepath.Dir(exePath)
+	mailPath         = filepath.Dir(exePath)
 	year, month, day = time.Now().Date()
 	subject          = fmt.Sprintf("【随手记】 %v-%v-%v", year, fmt.Sprintf("%02d", int(month)), fmt.Sprintf("%02d", day))
 )
@@ -39,7 +39,7 @@ type Cfg struct {
 func configHandler() *Cfg {
 	return &Cfg{
 		FileName: "mail.json",
-		CfgPath:  file_path,
+		CfgPath:  mailPath,
 	}
 }
 
@@ -75,7 +75,7 @@ func (f *Cfg) CreateConfig(fpath string) (error, string) {
 	if err != nil && os.IsNotExist(err) {
 		createFile, _ := os.Create(file)
 		rb, _ := json.Marshal(f.Content)
-		_, err := createFile.Write(rb)
+		_, err = createFile.Write(rb)
 		if err != nil {
 			return fmt.Errorf("创建并写入文件失败，请检"), ""
 		} else {
@@ -112,7 +112,7 @@ func (f *Cfg) CreateConfig(fpath string) (error, string) {
 }
 
 func (f *Cfg) ReadCfg() (error, *CfgInfo) {
-	fi := file_path + string(os.PathSeparator) + f.FileName
+	fi := mailPath + string(os.PathSeparator) + f.FileName
 	file := filepath.Clean(fi)
 	_, err := os.Stat(file)
 	if err != nil {
@@ -155,7 +155,7 @@ func (m *Email) SendEmail() error {
 	if err != nil {
 		return err
 	}
-	if err := cfginfo.IsEmpty(); err != nil {
+	if err = cfginfo.IsEmpty(); err != nil {
 		return err
 	}
 
@@ -165,7 +165,7 @@ func (m *Email) SendEmail() error {
 	mail.Subject = subject
 	mail.Text = []byte(m.Data)
 	addr := cfginfo.Smtp + ":25"
-	if err := mail.Send(addr, smtp.PlainAuth("", cfginfo.FromMail, cfginfo.Pwd, cfginfo.Smtp)); err != nil {
+	if err = mail.Send(addr, smtp.PlainAuth("", cfginfo.FromMail, cfginfo.Pwd, cfginfo.Smtp)); err != nil {
 		return fmt.Errorf("发送邮件出错:%v", err)
 	}
 	log.Println("send success...")
@@ -210,7 +210,9 @@ var configCommand = &cli.Command{
 		mail.Smtp = c.String("smtp")
 		mail.Pwd = c.String("pwd")
 		cfg.Content = *mail
-		cfg.CreateConfig(file_path)
+		if err, _ := cfg.CreateConfig(mailPath); err != nil {
+			return err
+		}
 		return nil
 	},
 }
