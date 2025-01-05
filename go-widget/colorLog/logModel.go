@@ -6,22 +6,26 @@ import (
 	"time"
 )
 
+// 定义日志前缀
 const (
-	//定义日志前缀
 	debugPre = "[DEBUG]"
 	infoPre  = "[INFO] "
 	warnPre  = "[WARN] "
 	errorPre = "[ERROR]"
 	fatalPre = "[FATAL]"
+)
 
-	//定义日志等级
+// 定义日志等级
+const (
 	debugLevel int64 = iota + 1
 	infoLevel
 	warnLevel
 	errorLevel
 	fatalLevel
+)
 
-	//定义日志
+// 定义日志mode
+const (
 	byDay int64 = iota + 1
 	bySize
 )
