@@ -1,0 +1,61 @@
+version : "3.7"
+
+networks:
+  zk-kafka-net:
+    name: zk-kafka-net
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.5.36.0/24
+          gateway: 10.5.36.1
+
+services:
+  kafka-zk:
+    image: zookeeper:latest
+    #image: wurstmeister/zookeeper:latest
+    container_name: kafka-zk
+    #restart: always
+    networks:
+      zk-kafka-net:
+        ipv4_address: 10.5.36.2  # 配置IP
+    ports:
+      - "2182:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_MAX_CLIENT_CONNECTIONS: 100  # 设置最大连接数为100
+
+
+
+  kafka-node1:
+    container_name: kafka-node1
+    image: wurstmeister/kafka:latest
+    #restart: always
+    networks:
+      zk-kafka-net:
+         ipv4_address: 10.5.36.11 # 配置IP
+    ports:
+      - 9097:9092
+    depends_on:
+      - kafka-zk
+
+    volumes:
+      - /home/data-store/kafka-docker-cluster/k-node1/data:/var/lib/kafka/data
+
+    environment:
+      # 唯一值
+      KAFKA_BROKER_ID: 0
+      #分区数量
+      KAFKA_NUM_PARTITIONS: 3
+       # 副本因子应小于或等于可用的 broker 数量。
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 2
+      #zk的地址，如果是本机写本机地址，不能写127.0.0.1
+      KAFKA_ZOOKEEPER_CONNECT: 10.5.36.2:2181
+      #允许使用明文监听器启动容器
+      #ALLOW_PLAINTEXT_LISTENER: "yes"
+      #当前服务器Ip
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://10.5.36.11:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      
+      
+ 

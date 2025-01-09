@@ -1,0 +1,60 @@
+version: "3.7"
+
+networks:
+  etcd-net:
+    name : etcd-net
+    #external: true
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.36.0/24
+          gateway: 10.2.36.10
+
+services: 
+  etcd-node1: 
+   container_name: etcd-node1
+   image: quay.io/coreos/etcd:v3.5.5  # 使用的镜像，这里是最新的 nginx 镜像
+   restart: always
+   networks:
+     etcd-net:  # 连接的网络名称
+      ipv4_address: 10.2.36.1	# 配置IP
+   ports:  # 定义要暴露的端口
+      - "2379:2379"  # 将容器的2379端口映射到主机的2379端口
+      - "2380:2380"
+   volumes:  # 定义数据卷
+      - /home/data-store/etcd-docker-cluster/etcd-node1-data:/etcd-node1-data  # 将主机的 数据目录挂载到容器中的 /etcd-data目录
+      - /home:/docker-etcd/etcd-cfg:/etcd-conf
+   command: etcd --config-file=/etcd-conf/etcd1.yaml
+
+  etcd-node2: 
+   container_name: etcd-node2
+   image: quay.io/coreos/etcd:v3.5.5  
+   restart: always
+   networks:	
+     etcd-net: # 连接的网络名称
+       ipv4_address: 10.2.36.2	# 配置IP
+   ports:  # 定义要暴露的端口
+      - "12379:2379"  # 将容器的 2379端口映射到主机的12379端口
+      - "12380:2380"
+   volumes:  # 定义数据卷
+      - /home/data-store/etcd-docker-cluster/etcd-node2-data:/etcd-node2-data # 将主机的 数据 目录挂载到容器中的 /etcd-data目录
+      - /home/docker-etcd/etcd-cfg/:/etcd-conf
+   command: etcd --config-file=/etcd-conf/etcd2.yaml
+
+  etcd-node3: 
+   container_name: etcd-node3
+   image: quay.io/coreos/etcd:v3.5.5  
+   restart: always
+   networks:
+      etcd-net:  # 连接的网络名称
+        ipv4_address: 10.2.36.3	# 配置IP
+   ports:  # 定义要暴露的端口
+      - "22379:2379"  # 将容器的2379 端口映射到主机的 22379 端口
+      - "22380:2380"
+   volumes:  # 定义数据卷
+      - /home/data-store/etcd-docker-cluster/etcd-node3-data:/etcd-node3-data  # 将主机的 数据 目录挂载到容器中的 /etcd-data 目录
+      - /home/docker-etcd/etcd-cfg/:/etcd-conf
+   command: etcd --config-file=/etcd-conf/etcd3.yaml
+
+

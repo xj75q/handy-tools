@@ -1,0 +1,14 @@
+version : "3.7"
+
+services:
+  consul-cluster:
+    image: bitnami/consul:latest
+    container_name: consul-cluster
+    restart: always
+    network_mode: host
+    ports:
+      - "8500:8500"
+    #environment:
+
+
+
