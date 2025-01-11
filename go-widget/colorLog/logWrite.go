@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func NewColLog(opts ...logOption) *logParam {
+func NewLog(opts ...logOption) *logParam {
 	logOpt := &logParam{
 		level:    debugLevel,
 		saveDays: 30,
