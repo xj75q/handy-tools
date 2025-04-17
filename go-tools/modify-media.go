@@ -166,13 +166,13 @@ func inputHandler() *param {
 
 func (p *param) judgeVideoType(flag string) bool {
 	switch flag {
-	case "mp4":
+	case ".mp4":
 		return true
-	case "wmv":
+	case ".wmv":
 		return true
-	case "avi":
+	case ".avi":
 		return true
-	case "rmvb":
+	case ".rmvb":
 		return true
 	default:
 		return false
@@ -181,13 +181,13 @@ func (p *param) judgeVideoType(flag string) bool {
 
 func (p *param) judgeAudioType(flag string) bool {
 	switch flag {
-	case "mp3":
+	case ".mp3":
 		return true
-	case "wav":
+	case ".wav":
 		return true
-	case "amr":
+	case ".amr":
 		return true
-	case "3gp":
+	case ".3gp":
 		return true
 	default:
 		return false
@@ -204,11 +204,10 @@ func (p *param) switchVideo() error {
 		if err != nil {
 			return err
 		}
-		infoName := strings.Split(strings.ToLower(info.Name()), ".")
-		flag := infoName[len(infoName)-1]
+		fileExt := strings.ToLower(fileCommon.GetFileExt(info.Name()))
 		switch p.ftype {
 		case "video":
-			isVideoType := p.judgeVideoType(flag)
+			isVideoType := p.judgeVideoType(fileExt)
 			if fileCommon.IsFile(pathAndFilename) && isVideoType {
 				fInfo := make(map[string]interface{})
 				fInfo[pathAndFilename] = p
@@ -218,7 +217,7 @@ func (p *param) switchVideo() error {
 				return nil
 			}
 		case "audio":
-			isAuidoType := p.judgeAudioType(flag)
+			isAuidoType := p.judgeAudioType(fileExt)
 			if fileCommon.IsFile(pathAndFilename) && isAuidoType {
 				fInfo := make(map[string]interface{})
 				fInfo[pathAndFilename] = p
@@ -227,10 +226,13 @@ func (p *param) switchVideo() error {
 				}()
 				return nil
 			}
+		default:
+			return nil
 
 		}
 		return nil
 	})
+	time.Sleep(200 * time.Millisecond)
 	batch.StartSwitch()
 	return err
 }
@@ -264,24 +266,22 @@ func (p *param) switchFile(fInfo interface{}) {
 	finfo := fInfo.(map[string]interface{})
 	for key, value := range finfo {
 		info := value.(*param)
-		outlist := strings.Split(key, pathFlag)
-		pathInfo := strings.Join(outlist[:len(outlist)-1], pathFlag)
-		fin := strings.Join(outlist[len(outlist)-1:], "")
-		name := strings.Split(fin, ".")
+		fileName := fileCommon.GetFileName(key)
+		filePath := fileCommon.GetFilePath(key)
 		var (
 			outName string
 			fName   string
 		)
 		if info.ftype == "video" {
-			fName = strings.Join(name[:len(name)-1], "") + ".mp3"
+			fName = fileName + ".mp3"
 		} else {
-			fName = "alter-" + strings.Join(name[:len(name)-1], "") + ".mp3"
+			fName = "alter-" + fileName + ".mp3"
 		}
 
 		if len(info.outPut) != 0 {
 			outName = info.outPut + pathFlag + fName
 		} else {
-			outName = pathInfo + pathFlag + fName
+			outName = filePath + pathFlag + fName
 
 		}
 		cmdArgs := p.generateCmdStr(info, key, outName)
@@ -301,7 +301,7 @@ func (p *param) switchFile(fInfo interface{}) {
 			_, err := stdout.Read(tmp)
 			data := string(tmp)
 			if strings.Contains(data, "muxing overhead") {
-				log.Printf(">> 将 %s 目录下的文件转换成 %s 成功...\n", pathInfo, fName)
+				log.Printf(">> 将 %s 目录下的文件转换成 %s 成功...\n", filePath, fName)
 			}
 			if err != nil {
 				break
