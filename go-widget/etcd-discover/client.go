@@ -43,19 +43,20 @@ func sayHello() {
 
 	client := pb.NewGreeterClient(conn)
 	req := &pb.HelloRequest{
-		Msg: "hello server...",
+		Msg: "client send ...",
 	}
 	replay, err := client.SayHi(context.Background(), req)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	fmt.Printf("recv server msg : %s\n", replay.GetMsg())
+	fmt.Printf(">> %s\n", replay.GetMsg())
 }
 
 func main() {
 	go discover.HandlerDiscover.WatchSvc("discSvc")
-	for {
+	heartbeat := time.NewTicker(2 * time.Second) // 心跳间隔为2秒
+	defer heartbeat.Stop()
+	for range heartbeat.C {
 		sayHello()
-		time.Sleep(time.Second * 2)
 	}
 }

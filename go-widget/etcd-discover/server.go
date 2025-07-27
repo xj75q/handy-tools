@@ -29,7 +29,7 @@ type (
 func (h *GreetServer) SayHi(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRespose, error) {
 	fmt.Printf(">> recv client msg:%s\n", in.Msg)
 	return &pb.HelloRespose{
-		Msg: fmt.Sprintf("you are client:%v", in.Msg),
+		Msg: fmt.Sprintf("server resp:%v", in.Msg),
 	}, nil
 }
 

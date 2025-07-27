@@ -1,6 +1,10 @@
 
 .idea/
 .vscode/
+.obsidian/
 *.log
+*.txt
+
 rename
 pic
+

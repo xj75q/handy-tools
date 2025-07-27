@@ -1,21 +1,226 @@
-### 【使用方法】
 
-#### 1> 文件重命名工具：
-go renamefile --help 去查看里面有哪些参数需要输入
-
-可用参数如下：
-   --frompath, -f            Whether to take a value from the input file path,default 'false'  (default: false)
-   --input value, -i value   please input file path
-   --name value, -n value    please input the new name,if you take a value from path,then input the name key worlds (default: new)
-   --output value, -o value  please input the output path
-   --type value, -t value    please input the file type,eg: go, python ,txt (default: go)
-   --help, -h                show help
-
-eg:
-
+go-tools下全部为自写的**命令行工具**，在**命令行**中使用。
+包含：
 ```
-  ./renamefile --input="/home/dir/go-dir" --frompath=true --name="day"
+文件重命名工具（含多种方式批量重命名）
+图片格式转换工具（多种图片格式批量转换）
+mp4转换成mp3工具（可调速，调节音量等）
+命令行内记录任务到滴答清单工具
+碎片内容随手记录到本地工具（简单shell也可以实现，这里用go实现）
+命令行内发送碎片记录到flomo工具
+命令行查看天气工具
+命令行发送邮件工具
+密码生成工具
+扫描开放端口工具
 ```
 
+##### 【工具-文件重命名】
 
+1> 功能很多，使用help查看有哪些参数需要输入
+```
+rename --help 
+```
+
+2> 使用示例：
+
+```
+  ./rename --input="./" --frompath=true --name="day"
+```
+
+3> 分为主命令和子命令：
+全局命令：
+```
+--input , -i    操作文件路径（必填） (default: "./")
+--output , -o   输出文件的路径（选填）
+```
+
+主命令包含:（前面是全称，后面是缩写）
+```
+addsign, add       增加文件名标志
+replace, rep       替换文件的字符串
+samename, same     使用相同名字作为文件名
+usepathname, path  使用所在文件夹名作为新文件的名字
+alterSerial, sn    补齐文件前缀的数字
+substr, sub        删除文件名中的某个字符
+rmspace, rms       删除文件名中的空格
+```
+
+子命令包含：
+每个主命令下使用--help查看
+```
+./rename --input="./" same --help
+```
+
+##### 【工具-滴答清单】
+可在命令行中快速添加自己的日程计划。
+
+1> 登录账户
+```
+./dida login -u xxx -p xxx 
+```
+
+参数说明：
+```
+  -p, --password   密码
+  -u, --username    用户名
+```
+
+2> 设置清单名
+```
+./dida project -n “滴答清单上的清单名称”
+```
+
+3> 创建任务
+```
+./dida record -i xxx
+```
+
+参数说明：
+```
+  -t, --content    任务内容
+  -d, --date       日期
+  -i, --title      任务标题
+```
+
+注意：可自动添加时间
+```
+1> 例如dida record -i  “晚上xxx”
+在滴答清单中就可以自动添加到晚上9点做xxx
+
+2> 在正文中可写“上午11点xxx”,那将自动添加到上午11点
+
+3> 在正文中写“8月10日xxx”,将可自动添加清单日期
+```
+
+
+##### 【工具-图片格式转换】
+
+使用示例
+```
+pic -i ./
+```
+
+参数说明：
+```
+-i  请输入要转换的文件路径
+-o  转换后的保存路径，默认在当前路径下 (default "./")
+-t  请输入要转换为哪种图片格式 (default "jpg")
+```
+
+##### 【工具-mp4转mp3】
+
+使用示例：
+```
+media -i ./ -v -4
+```
+
+参数说明：
+```
+  -i   文件路径(必填), ./ 为当前路径下
+  -o   文件保存路径（选填）,默认在当前路径下
+  -s   速度调节，倍率调整范围为[0.5, 2.0]
+  -t   默认视频，音频请使用audio参数 (default "video")
+  -v   声音调节,声音调整分[正负数调整分贝]
+```
+
+##### 【工具-随手记录到本地】
+最开始使用shell脚本，后改为go语言简单的几行。
+1> 单独使用
+1.1> 添加配置：
+```
+./record config -n "xxx" -p "xxx"
+```
+
+参数说明：
+```
+-n, --filename   填写笔记名称
+-p, --path       填写笔记保存的路径
+-t, --type       笔记是否需要后缀.txt (default true)
+```
+
+1.2> 发送笔记：
+```
+./record note -c "xxx"
+```
+
+
+2> 笔记自动化完整使用流程:
+```
+随手记录到本地
+shell脚本提前本地文件当中信息
+自发送邮件给自己
+```
+
+需要三个文件
+```
+record-notes.go + send-email.go + shell脚本
+```
+
+##### 【工具-发送邮件】
+使用go语言实现的发送邮件工具，
+可以将自己的笔记发送给自己，邮件主题在代码里写死的，如需要自行修改
+
+添加配置：
+```
+ ./mail  config --from_mail="" --to_mail="" --smtp="" --pwd=""
+```
+
+参数说明：
+```
+from_mail 发件箱
+to_mail   收件箱
+smtp      smtp地址
+pwd       邮箱密码
+```
+
+发送信息：
+```
+./mail send --data="xxx"
+```
+
+##### 【工具-发送碎片记录到flomo】
+
+添加配置：
+```
+```
+发送笔记：
+```
+```
+
+##### 【工具-查看天气】
+使用go写的天气网的爬虫，直接执行文件
+```
+./weather
+```
+
+##### 【工具-密码生成工具】
+
+如果不输入参数，那将使用默认值
+```
+./pwd-gen 
+```
+
+使用参数示例
+```
+./pwd-gen -l 5 -s 2 -o ~/files/awe/tmp-1/
+```
+
+参数说明：
+```
+-l 生成的密码长度，默认为3 
+-o 文件保存路径，默认在当前路径下 
+-s 只要几位数开始的密码，默认从1位开始
+```
+
+##### 【工具- 扫描开放端口】
+
+获取本机ip
+```
+ifconfig
+```
+
+扫描开放端口
+```
+./tcp-scan  192.168.27.1
+```
 

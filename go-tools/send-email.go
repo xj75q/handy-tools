@@ -38,7 +38,7 @@ type Cfg struct {
 
 func configHandler() *Cfg {
 	return &Cfg{
-		FileName: "mail.json",
+		FileName: "email.json",
 		CfgPath:  mailPath,
 	}
 }
@@ -209,6 +209,12 @@ var configCommand = &cli.Command{
 		mail.ToMail = c.String("to_mail")
 		mail.Smtp = c.String("smtp")
 		mail.Pwd = c.String("pwd")
+		if mail.FromMail == "" || mail.ToMail == "" || mail.Smtp == "" || mail.Pwd == "" {
+			return fmt.Errorf("配置参数不能为空，请重新输入")
+		}
+		if !strings.Contains(mail.FromMail, "@") || !strings.Contains(mail.ToMail, "@") {
+			return fmt.Errorf("请输入正确的邮箱参数")
+		}
 		cfg.Content = *mail
 		if err, _ := cfg.CreateConfig(mailPath); err != nil {
 			return err
@@ -220,7 +226,6 @@ var configCommand = &cli.Command{
 var mailCommand = &cli.Command{
 	Name:    "send",
 	Aliases: []string{"s"},
-
 	Flags: []cli.Flag{
 		&cli.StringFlag{
 			Name:     "data",
@@ -244,9 +249,8 @@ func main() {
 	//app.Name = "发送随笔到邮箱里面"
 	app.HideVersion = true
 	app.HideHelpCommand = true
-
-	app.Usage = "(send to email...)"
-	app.UsageText = `./send c -f <parames> or ./send m -d <parames>`
+	app.Usage = "(send msg to email...)"
+	app.UsageText = `./mail c -f <parames>`
 	app.Commands = []*cli.Command{
 		configCommand,
 		mailCommand,
