@@ -4,14 +4,12 @@
 
 using namespace std;
 
-
 void HideWindow() {
 	HWND hwnd = GetForegroundWindow();
 	if (hwnd) {
 		ShowWindow(hwnd, SW_HIDE);
 	}
 }
-
 
 int main(int argc, char* argv[])
 {
@@ -23,10 +21,13 @@ int main(int argc, char* argv[])
 
 	//system("pause");
 	if (0 == RegisterHotKey(NULL, 1, MOD_SHIFT, VK_F1)) {
-		cout << "RegisterHotKey error : " << GetLastError() << endl;
+		cout << "HotKey error : " << GetLastError() << endl;
 	}
 	if (0 == RegisterHotKey(NULL, 2, MOD_SHIFT, VK_F2)) {
-		cout << "RegisterHotKey error : " << GetLastError() << endl;
+		cout << "HotKey error : " << GetLastError() << endl;
+	}
+	if (0 == RegisterHotKey(NULL, 3, MOD_SHIFT, VK_F3)) {
+		cout << "exit error : " << GetLastError() << endl;
 	}
 
 	// 消息循环
@@ -36,28 +37,23 @@ int main(int argc, char* argv[])
 		case WM_HOTKEY:
 		{
 			if (1 == msg.wParam) {
-				ShowWindow(task, SW_SHOW);//显示
-				//cout << "1" << endl;
+				ShowWindow(task, SW_SHOW);//显示任务栏
 			}
-
 			else if (2 == msg.wParam) {
 				ShowWindow(task, SW_HIDE);//隐藏任务栏
-				//cout << "2" << endl;
 			}
-
+			else if (3 == msg.wParam) {
+				ShowWindow(task, SW_SHOW);
+				return 0;  // 显示任务栏并退出hide程序
+			}
 			break;
 		}
-
 		default:
 			break;
 		}
 
 	}
-
 	cout << "finished." << endl;
 	return 0;
 }
-
-
-
 

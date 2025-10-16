@@ -102,5 +102,5 @@ func main() {
 		return
 	}
 
-	log.Printf("您所在的地区为：%v\n天气情况为    ：%v\n风力          ：%v\n湿度          ：%v\n空气质量      ：%v\nAQI指数为     ：%v\n预计会有      ：%v\n温馨提醒      ：%v\n", data.city, data.weather, data.wind, data.humidity, data.airLevel, data.Aqi, data.prediction, data.tips)
+	fmt.Printf("您所在的地区为：%v\n天气情况为    ：%v\n风力          ：%v\n湿度          ：%v\n空气质量      ：%v\nAQI指数为     ：%v\n预计会有      ：%v\n温馨提醒      ：%v\n", data.city, data.weather, data.wind, data.humidity, data.airLevel, data.Aqi, data.prediction, data.tips)
 }
