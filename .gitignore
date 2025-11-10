@@ -4,6 +4,9 @@
 .obsidian/
 *.log
 *.txt
+*.json
+*.yaml
+*.toml
 
 rename
 pic

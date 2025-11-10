@@ -100,7 +100,7 @@ func (h *HtmlParams) SendPost(url, data string) error {
 	client := &http.Client{}
 	postData := make(map[string]string)
 	postData["content"] = data
-	sendData, _ := json.Marshal(postData)
+	sendData, _ := json.MarshalIndent(postData, "", "  ")
 	req, err := http.NewRequest(h.Method, url, strings.NewReader(string(sendData)))
 	if err != nil {
 		return fmt.Errorf("发送到flomo笔记出错:%v", err)

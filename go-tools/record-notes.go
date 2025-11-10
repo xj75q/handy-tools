@@ -34,7 +34,7 @@ func (c *notescfg) initConfig() (error, string) {
 	_, err := os.Stat(file)
 	if err != nil && os.IsNotExist(err) {
 		createFile, _ := os.Create(file)
-		rb, _ := json.Marshal(c)
+		rb, _ := json.MarshalIndent(c, "", "  ")
 		_, err := createFile.Write(rb)
 		if err != nil {
 			return fmt.Errorf("创建并写入文件失败，请检查..."), ""
@@ -42,7 +42,7 @@ func (c *notescfg) initConfig() (error, string) {
 			return nil, fmt.Sprintf(">> 文本记录配置文件初始化成功...")
 		}
 	} else {
-		rb, _ := json.Marshal(c)
+		rb, _ := json.MarshalIndent(c, "", "  ")
 		if err := ioutil.WriteFile(file, rb, 0644); err != nil {
 			return fmt.Errorf(">> 更新配置文件失败，请重试..."), ""
 		} else {

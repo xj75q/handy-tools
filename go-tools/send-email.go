@@ -23,49 +23,36 @@ var (
 	subject          = fmt.Sprintf("【随手记】 %v-%v-%v", year, fmt.Sprintf("%02d", int(month)), fmt.Sprintf("%02d", day))
 )
 
-type CfgInfo struct {
-	FromMail string `json:"fromMail"`
-	ToMail   string `json:"toMail"`
-	Smtp     string `json:"smtp"`
-	Pwd      string `json:"pwd"`
-}
+type (
+	CfgInfo struct {
+		FromMail string `json:"fromMail"`
+		ToMail   string `json:"toMail"`
+		Subject  string `json:"subject"`
+		Smtp     string `json:"smtp"`
+		Pwd      string `json:"pwd"`
+	}
 
-type Cfg struct {
-	FileName string
-	CfgPath  string
-	Content  CfgInfo
+	Cfg struct {
+		FileName string
+		CfgPath  string
+		Content  CfgInfo
+	}
+
+	MailInfo struct {
+		Subject string `json:"subject"`
+		Data    string `json:"data"`
+	}
+)
+
+func mailHandler() *MailInfo {
+	return &MailInfo{}
 }
 
 func configHandler() *Cfg {
 	return &Cfg{
-		FileName: "email.json",
+		FileName: "mailcfg.json",
 		CfgPath:  mailPath,
 	}
-}
-
-type Email struct {
-	Subject string `json:"subject"`
-	Data    string `json:"data"`
-}
-
-func mailHandler() *Email {
-	return &Email{
-		Subject: subject,
-	}
-}
-
-func StructToMap(obj interface{}) map[string]interface{} {
-	objType := reflect.TypeOf(obj)
-	objValue := reflect.ValueOf(obj)
-
-	data := make(map[string]interface{})
-	for i := 0; i < objType.NumField(); i++ {
-		field := objType.Field(i)
-		value := objValue.Field(i).Interface()
-		data[field.Name] = value
-	}
-
-	return data
 }
 
 func (f *Cfg) CreateConfig(fpath string) (error, string) {
@@ -74,7 +61,7 @@ func (f *Cfg) CreateConfig(fpath string) (error, string) {
 	_, err := os.Stat(file)
 	if err != nil && os.IsNotExist(err) {
 		createFile, _ := os.Create(file)
-		rb, _ := json.Marshal(f.Content)
+		rb, _ := json.MarshalIndent(f.Content, "", "  ")
 		_, err = createFile.Write(rb)
 		if err != nil {
 			return fmt.Errorf("创建并写入文件失败，请检"), ""
@@ -91,21 +78,21 @@ func (f *Cfg) CreateConfig(fpath string) (error, string) {
 		if localCfg.FromMail != "" {
 			data.FromMail = localCfg.FromMail
 		}
-
 		if localCfg.ToMail != "" {
 			data.ToMail = localCfg.ToMail
 		}
-
+		if localCfg.Subject != "" {
+			data.Subject = localCfg.Subject
+		}
 		if localCfg.Pwd != "" {
 			data.Pwd = localCfg.Pwd
 		}
-
 		if localCfg.Smtp != "" {
 			data.Smtp = localCfg.Smtp
 		}
-		result, _ := json.MarshalIndent(data, "", "")
+		result, _ := json.MarshalIndent(data, "", "  ")
 		_ = ioutil.WriteFile(file, result, 0644)
-
+		log.Println(">> 邮箱配置文件已更新")
 	}
 
 	return nil, ""
@@ -127,12 +114,12 @@ func (f *Cfg) ReadCfg() (error, *CfgInfo) {
 	if err != nil {
 		return fmt.Errorf("读取配置文件出错：%v\n", err), nil
 	}
-	cfg_info := f.Content
-	err = viper.Unmarshal(&cfg_info)
+	cfgInfo := f.Content
+	err = viper.Unmarshal(&cfgInfo)
 	if err != nil {
 		return fmt.Errorf("文件解析出错：%v\n", err), nil
 	}
-	return nil, &cfg_info
+	return nil, &cfgInfo
 }
 
 func (c *CfgInfo) IsEmpty() error {
@@ -142,14 +129,17 @@ func (c *CfgInfo) IsEmpty() error {
 		field := v.Field(i)
 		fieldType := t.Field(i)
 		if field.Interface() == reflect.Zero(field.Type()).Interface() {
-			return fmt.Errorf("mail config field '%s' is empty\n", fieldType.Name)
-			break
+			if fieldType.Name == "Subject" {
+				continue
+			} else {
+				return fmt.Errorf("配置出错字段出错： '%s' 参数为空，请补充后重试！！！", fieldType.Name)
+			}
 		}
 	}
 	return nil
 }
 
-func (m *Email) SendEmail() error {
+func (params *MailInfo) SendMail() error {
 	cfg := configHandler()
 	err, cfginfo := cfg.ReadCfg()
 	if err != nil {
@@ -158,41 +148,54 @@ func (m *Email) SendEmail() error {
 	if err = cfginfo.IsEmpty(); err != nil {
 		return err
 	}
-
 	mail := email.NewEmail()
 	mail.From = cfginfo.FromMail
 	mail.To = []string{cfginfo.ToMail}
-	mail.Subject = subject
-	mail.Text = []byte(m.Data)
+	mail.Text = []byte(params.Data)
+	if params.Subject != "" {
+		mail.Subject = params.Subject
+	} else {
+		if cfginfo.Subject != "" {
+			mail.Subject = cfginfo.Subject
+		} else {
+			mail.Subject = subject
+		}
+	}
 	addr := cfginfo.Smtp + ":25"
 	if err = mail.Send(addr, smtp.PlainAuth("", cfginfo.FromMail, cfginfo.Pwd, cfginfo.Smtp)); err != nil {
 		return fmt.Errorf("发送邮件出错:%v", err)
 	}
-	log.Println("send success...")
+	fmt.Println("send success...")
 	return nil
 }
 
 var configCommand = &cli.Command{
 	Name: "config",
 	//Usage:   "Displays global config options and their current values",
-	Aliases: []string{"c"},
+	Aliases: []string{"cfg"},
 
 	Flags: []cli.Flag{
 		&cli.StringFlag{
-			Name:     "from_mail",
+			Name:     "from",
 			Aliases:  []string{"f"},
 			Required: false,
 		},
 
 		&cli.StringFlag{
-			Name:     "to_mail",
+			Name:     "to",
 			Aliases:  []string{"t"},
 			Required: false,
 		},
 
 		&cli.StringFlag{
-			Name:     "smtp",
+			Name:     "subj",
 			Aliases:  []string{"s"},
+			Required: false,
+		},
+
+		&cli.StringFlag{
+			Name:     "smtp",
+			Aliases:  []string{"m"},
 			Required: false,
 		},
 		&cli.StringFlag{
@@ -205,8 +208,9 @@ var configCommand = &cli.Command{
 	Action: func(c *cli.Context) error {
 		cfg := configHandler()
 		mail := &CfgInfo{}
-		mail.FromMail = c.String("from_mail")
-		mail.ToMail = c.String("to_mail")
+		mail.FromMail = c.String("from")
+		mail.ToMail = c.String("to")
+		mail.Subject = c.String("subj")
 		mail.Smtp = c.String("smtp")
 		mail.Pwd = c.String("pwd")
 		if mail.FromMail == "" || mail.ToMail == "" || mail.Smtp == "" || mail.Pwd == "" {
@@ -224,9 +228,13 @@ var configCommand = &cli.Command{
 }
 
 var mailCommand = &cli.Command{
-	Name:    "send",
-	Aliases: []string{"s"},
+	Name: "send",
 	Flags: []cli.Flag{
+		&cli.StringFlag{
+			Name:     "subj",
+			Aliases:  []string{"s"},
+			Required: false,
+		},
 		&cli.StringFlag{
 			Name:     "data",
 			Aliases:  []string{"d"},
@@ -236,8 +244,9 @@ var mailCommand = &cli.Command{
 
 	Action: func(c *cli.Context) error {
 		mail := mailHandler()
+		mail.Subject = c.String("subj")
 		mail.Data = c.String("data")
-		if err := mail.SendEmail(); err != nil {
+		if err := mail.SendMail(); err != nil {
 			return err
 		}
 		return nil
@@ -246,11 +255,11 @@ var mailCommand = &cli.Command{
 
 func main() {
 	app := cli.NewApp()
-	//app.Name = "发送随笔到邮箱里面"
+	app.Name = "邮件通知"
 	app.HideVersion = true
 	app.HideHelpCommand = true
 	app.Usage = "(send msg to email...)"
-	app.UsageText = `./mail c -f <parames>`
+	app.UsageText = fmt.Sprintf("%s\n%s", "./email cfg -f <parames>", "./email send -s <subject> -d <data>")
 	app.Commands = []*cli.Command{
 		configCommand,
 		mailCommand,

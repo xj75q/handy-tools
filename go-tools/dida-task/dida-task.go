@@ -79,7 +79,7 @@ func (c *cfg) initConfig() (error, string) {
 	_, err := os.Stat(file)
 	if err != nil && os.IsNotExist(err) {
 		createFile, _ := os.Create(file)
-		rb, _ := json.Marshal(c.Content)
+		rb, _ := json.MarshalIndent(c.Content, "", "  ")
 		_, err := createFile.Write(rb)
 		if err != nil {
 			return fmt.Errorf("创建并写入文件失败，请检查..."), ""
@@ -169,7 +169,7 @@ func (h *htmlParams) generateReqHeader(cookie string) map[string]interface{} {
 func (u *userInfo) login() {
 	web := htmlHandler()
 	client := &http.Client{Timeout: timeOut}
-	sendData, _ := json.Marshal(&u)
+	sendData, _ := json.MarshalIndent(&u, "", "  ")
 	var wg sync.WaitGroup
 	stream := make(chan interface{}, 1)
 	defer close(stream)
@@ -380,7 +380,7 @@ func (c *cfg) sendTask(title, content, startdate string) {
 
 		web := htmlHandler()
 		client := &http.Client{Timeout: timeOut}
-		sendData, _ := json.Marshal(&data)
+		sendData, _ := json.MarshalIndent(&data, "", "  ")
 		req, err := http.NewRequest(web.Method, TaskApiUrl, strings.NewReader(string(sendData)))
 		if err != nil {
 			stream <- err
