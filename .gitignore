@@ -8,6 +8,9 @@
 *.yaml
 *.toml
 
+go.mod
+go.sum
+
 rename
 pic
 

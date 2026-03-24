@@ -144,6 +144,14 @@ func (f *fileInfo) convertPic(picStream interface{}) error {
 			if err := f.convertCmd(pathAndFilename, outFile); err != nil {
 				return err
 			}
+		} else if strings.Contains(picName, "ScreenShot_") {
+			tmpName := strings.Split(picName, "ScreenShot_")
+			newName := tmpName[1]
+			outFile := fmt.Sprintf("%s%s%s", outPath, newName, outType)
+			//log.Println(newName, outFile)
+			if err := f.convertCmd(pathAndFilename, outFile); err != nil {
+				return err
+			}
 		} else if picNameLength > 15 && picNameLength < 25 {
 			randomNum := rand.Intn(900) + 100 // 生成一个3位随机数
 			newName := string([]rune(picName)[:12])
